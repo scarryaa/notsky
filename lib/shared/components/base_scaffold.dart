@@ -20,23 +20,33 @@ class _BaseScaffoldState extends State<BaseScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.read<AuthCubit>().logout();
-            },
-            icon: Icon(Icons.logout),
+      appBar: PreferredSize(
+        preferredSize: Size(double.infinity, 60.0),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Theme.of(context).colorScheme.outline),
+            ),
           ),
-        ],
-        title: Text(
-          [
-            'Home',
-            'Search',
-            'Messages',
-            'Notifications',
-            'Profile',
-          ][_selectedIndex],
+          child: AppBar(
+            actions: [
+              IconButton(
+                onPressed: () {
+                  context.read<AuthCubit>().logout();
+                },
+                icon: Icon(Icons.logout),
+              ),
+            ],
+            title: Text(
+              [
+                'Home',
+                'Search',
+                'Messages',
+                'Notifications',
+                'Profile',
+              ][_selectedIndex],
+            ),
+          ),
         ),
       ),
       body:
@@ -54,6 +64,7 @@ class _BaseScaffoldState extends State<BaseScaffold> {
           ),
         ),
         child: NavigationBar(
+          backgroundColor: Theme.of(context).colorScheme.surface,
           height: 48.0,
           onDestinationSelected: (int index) {
             setState(() {

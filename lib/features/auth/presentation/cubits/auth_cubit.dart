@@ -35,6 +35,17 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> refreshUserSession(String refreshJwt) async {
+    try {
+      emit(AuthLoading());
+      final session = await refreshSession(refreshJwt: refreshJwt);
+      await _saveSession(session.data);
+      emit(AuthSuccess(session.data));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
   Future<void> checkAuthStatus() async {
     try {
       emit(AuthLoading());

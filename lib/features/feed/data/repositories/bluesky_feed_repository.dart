@@ -10,11 +10,16 @@ class BlueskyFeedRepository implements FeedRepository {
 
   @override
   Future<Feed> getFeed() async {
-    final preferences = await _blueskyService.getPreferences();
-    final moderationPrefs = preferences.getModerationPrefs();
-    final feeds = await _blueskyService.getTimeline(
-      headers: getLabelerHeaders(moderationPrefs),
-    );
-    return feeds;
+    try {
+      final preferences = await _blueskyService.getPreferences();
+      final moderationPrefs = preferences.getModerationPrefs();
+      final feeds = await _blueskyService.getTimeline(
+        headers: getLabelerHeaders(moderationPrefs),
+      );
+
+      return feeds;
+    } catch (e) {
+      rethrow;
+    }
   }
 }
