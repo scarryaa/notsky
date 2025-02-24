@@ -44,6 +44,7 @@ class _BaseScaffoldState extends State<BaseScaffold> {
           ),
         ),
         child: NavigationBar(
+          height: 48.0,
           onDestinationSelected: (int index) {
             setState(() {
               _selectedIndex = index;
@@ -51,6 +52,7 @@ class _BaseScaffoldState extends State<BaseScaffold> {
           },
           selectedIndex: _selectedIndex,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+          indicatorColor: Colors.transparent,
           destinations: const <Widget>[
             NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
             NavigationDestination(
@@ -59,11 +61,11 @@ class _BaseScaffoldState extends State<BaseScaffold> {
               label: 'Search',
             ),
             NavigationDestination(
-              icon: Badge(label: Text('2'), child: Icon(Icons.messenger_sharp)),
+              icon: Icon(Icons.message_rounded),
               label: 'Messages',
             ),
             NavigationDestination(
-              icon: Badge(child: Icon(Icons.notifications)),
+              icon: Icon(Icons.notifications),
               label: 'Notifications',
             ),
             NavigationDestination(
