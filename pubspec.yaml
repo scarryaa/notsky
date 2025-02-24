@@ -17,6 +17,7 @@ dependencies:
   atproto_core: ^0.11.2
   bluesky: ^0.18.9
   shared_preferences: ^2.5.2
+  atproto: ^0.13.3
 
 dev_dependencies:
   flutter_test:

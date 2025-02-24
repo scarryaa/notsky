@@ -2,7 +2,7 @@ import 'package:atproto_core/atproto_core.dart';
 import 'package:bluesky/atproto.dart';
 import 'package:bluesky/bluesky.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:notsky/features/auth/cubits/auth_state.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthCubit extends Cubit<AuthState> {

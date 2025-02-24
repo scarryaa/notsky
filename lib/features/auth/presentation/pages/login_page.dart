@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:notsky/features/auth/cubits/auth_cubit.dart';
-import 'package:notsky/features/auth/cubits/auth_state.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

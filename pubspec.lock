@@ -26,7 +26,7 @@ packages:
     source: hosted
     version: "0.4.0"
   atproto:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: atproto
       sha256: "0f3d342c4d629e9994d58dbadd4281074641ac75a18cd514b212a3b15f86019e"

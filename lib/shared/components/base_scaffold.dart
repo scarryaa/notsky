@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/home/presentation/pages/home_page.dart';
 import 'package:notsky/features/messages/presentation/pages/messages_page.dart';
 import 'package:notsky/features/notifications/presentation/pages/notifications_page.dart';
@@ -19,6 +21,14 @@ class _BaseScaffoldState extends State<BaseScaffold> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.read<AuthCubit>().logout();
+            },
+            icon: Icon(Icons.logout),
+          ),
+        ],
         title: Text(
           [
             'Home',
