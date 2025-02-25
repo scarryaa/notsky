@@ -1,5 +1,6 @@
 import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
+import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
 
 class PostComponent extends StatelessWidget {
   const PostComponent({super.key, required this.post});
@@ -32,14 +33,24 @@ class PostComponent extends StatelessWidget {
                   Row(
                     spacing: 4.0,
                     children: [
-                      Text(
-                        post.author.displayName ?? '',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      Flexible(
+                        flex: 1,
+                        child: Text(
+                          post.author.displayName ?? '',
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
-                      Text(
-                        post.author.handle,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      Flexible(
+                        child: Text(
+                          post.author.handle,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                       Text('•'),
@@ -55,6 +66,18 @@ class PostComponent extends StatelessWidget {
                     children: [
                       Expanded(child: Text(post.record.text, softWrap: true)),
                     ],
+                  ),
+                  PostActionsComponent(
+                    likeCount: post.likeCount,
+                    replyCount: post.replyCount,
+                    repostCount: post.repostCount + post.quoteCount,
+                    repostedByViewer: post.viewer.isReposted,
+                    likedByViewer: post.viewer.isLiked,
+                    // TODO post actions
+                    onLike: () {},
+                    onReply: () {},
+                    onMore: () {},
+                    onRepost: () {},
                   ),
                 ],
               ),

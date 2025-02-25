@@ -29,6 +29,8 @@ class _BaseScaffoldState extends State<BaseScaffold> {
             ),
           ),
           child: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            scrolledUnderElevation: 0,
             actions: [
               IconButton(
                 onPressed: () {
