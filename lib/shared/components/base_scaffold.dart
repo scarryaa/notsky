@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
@@ -31,49 +30,53 @@ class _BaseScaffoldState extends State<BaseScaffold> {
   Widget build(BuildContext context) {
     return PopScope(
       child: Scaffold(
-        appBar: PreferredSize(
-          preferredSize: Size(double.infinity, 60.0),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.outline,
+        body:
+            _selectedIndex == 0
+                ? _buildHome()
+                : Scaffold(
+                  appBar: PreferredSize(
+                    preferredSize: Size(double.infinity, 60.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                        ),
+                      ),
+                      child: AppBar(
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        scrolledUnderElevation: 0,
+                        actions: [
+                          IconButton(
+                            onPressed: () {
+                              context.read<AuthCubit>().logout();
+                            },
+                            icon: Icon(Icons.logout),
+                          ),
+                        ],
+                        title: Text(
+                          [
+                            'Home',
+                            'Search',
+                            'Messages',
+                            'Notifications',
+                            'Profile',
+                          ][_selectedIndex],
+                        ),
+                      ),
+                    ),
+                  ),
+                  body: IndexedStack(
+                    index: _selectedIndex - 1,
+                    children: [
+                      _buildNavigator(1, const SearchPage()),
+                      _buildNavigator(2, const MessagesPage()),
+                      _buildNavigator(3, const NotificationsPage()),
+                      _buildNavigator(4, const ProfilePage()),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-            child: AppBar(
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              scrolledUnderElevation: 0,
-              actions: [
-                IconButton(
-                  onPressed: () {
-                    context.read<AuthCubit>().logout();
-                  },
-                  icon: Icon(Icons.logout),
-                ),
-              ],
-              title: Text(
-                [
-                  'Home',
-                  'Search',
-                  'Messages',
-                  'Notifications',
-                  'Profile',
-                ][_selectedIndex],
-              ),
-            ),
-          ),
-        ),
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            _buildNavigator(0, const HomePage()),
-            _buildNavigator(1, const SearchPage()),
-            _buildNavigator(2, const MessagesPage()),
-            _buildNavigator(3, const NotificationsPage()),
-            _buildNavigator(4, const ProfilePage()),
-          ],
-        ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             border: Border(
@@ -114,6 +117,20 @@ class _BaseScaffoldState extends State<BaseScaffold> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHome() {
+    return Navigator(
+      key: _navigatorKeys[0],
+      onGenerateRoute: (RouteSettings settings) {
+        return NoBackgroundCupertinoPageRoute(
+          settings: settings,
+          builder: (BuildContext context) {
+            return const HomePage();
+          },
+        );
+      },
     );
   }
 

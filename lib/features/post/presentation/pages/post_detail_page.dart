@@ -1,5 +1,5 @@
 import 'package:bluesky/bluesky.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/post/presentation/components/base_post_component.dart';
@@ -16,7 +16,29 @@ class PostDetailPage extends StatelessWidget {
     return BlocProvider(
       create:
           (context) => PostCubit(context.read<AuthCubit>().getBlueskyService()),
-      child: BasePostComponent(post: post, reason: reason, detailed: true),
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: Size(double.infinity, 60.0),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+            ),
+            child: AppBar(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              scrolledUnderElevation: 0,
+              actions: [
+                // TODO
+              ],
+              title: Text('Post'),
+            ),
+          ),
+        ),
+        body: BasePostComponent(post: post, reason: reason, detailed: true),
+      ),
     );
   }
 }

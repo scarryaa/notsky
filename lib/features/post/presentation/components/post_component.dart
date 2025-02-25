@@ -1,5 +1,4 @@
 import 'package:bluesky/bluesky.dart' hide Image;
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
