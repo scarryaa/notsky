@@ -192,12 +192,98 @@ class _PostComponentState extends State<PostComponent> {
   }
 
   Widget _buildPostContent() {
-    return Text(
-      widget.post.record.text,
-      softWrap: true,
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onSurface,
-        fontSize: 14.0,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.post.record.text,
+          softWrap: true,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 14.0,
+          ),
+        ),
+        _buildImageGrid(),
+      ],
+    );
+  }
+
+  Widget _buildImageGrid() {
+    final embed = widget.post.embed;
+    if (embed == null || embed.data is! EmbedViewImages) {
+      return const SizedBox.shrink();
+    }
+
+    final imageEmbed = embed.data as EmbedViewImages;
+    final images = imageEmbed.images;
+
+    if (images.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    if (images.length == 1) {
+      final image = images[0];
+      final aspectRatio =
+          image.aspectRatio != null
+              ? image.aspectRatio!.width / image.aspectRatio!.height
+              : 1.0;
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: AspectRatio(
+          aspectRatio: aspectRatio,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: Image.network(
+              image.fullsize,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(child: CircularProgressIndicator());
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[300],
+                  child: Icon(Icons.broken_image, color: Colors.grey[600]),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: images.length <= 2 ? images.length : 2,
+          childAspectRatio: 1.0,
+          crossAxisSpacing: 4.0,
+          mainAxisSpacing: 4.0,
+        ),
+        itemCount: images.length,
+        itemBuilder: (context, index) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: Image.network(
+              images[index].fullsize,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(child: CircularProgressIndicator());
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[300],
+                  child: Icon(Icons.broken_image, color: Colors.grey[600]),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }
