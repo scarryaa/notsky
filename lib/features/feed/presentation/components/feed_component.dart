@@ -4,6 +4,7 @@ import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_state.dart';
 import 'package:notsky/features/post/presentation/components/post_component.dart';
+import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 
 class FeedComponent extends StatelessWidget {
   const FeedComponent({super.key});
@@ -24,8 +25,13 @@ class FeedComponent extends StatelessWidget {
             return RefreshIndicator(
               child: ListView.separated(
                 itemBuilder:
-                    (context, index) =>
-                        PostComponent(post: state.feeds.feed[index].post),
+                    (context, index) => BlocProvider(
+                      create:
+                          (context) => PostCubit(
+                            context.read<AuthCubit>().getBlueskyService(),
+                          ),
+                      child: PostComponent(post: state.feeds.feed[index].post),
+                    ),
                 itemCount: state.feeds.feed.length,
                 separatorBuilder:
                     (context, index) => Divider(

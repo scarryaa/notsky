@@ -3,10 +3,20 @@ import 'package:bluesky/atproto.dart';
 import 'package:bluesky/bluesky.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
+import 'package:notsky/features/feed/data/services/bluesky_service_impl.dart';
+import 'package:notsky/features/feed/domain/services/bluesky_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit() : super(AuthInitial());
+
+  BlueskyService getBlueskyService() {
+    if (state is AuthSuccess) {
+      return BlueskyServiceImpl((state as AuthSuccess).session, this);
+    } else {
+      throw Exception('Cannot get BlueskyService: User not authenticated');
+    }
+  }
 
   Future<void> login(String identifier, String password) async {
     try {

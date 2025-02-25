@@ -40,7 +40,7 @@ class PostActionsComponent extends StatelessWidget {
           ),
           _buildActionButton(
             context,
-            onPressed: () {},
+            onPressed: onRepost,
             icon: Icons.repeat,
             metric: repostCount,
             color:
@@ -52,7 +52,7 @@ class PostActionsComponent extends StatelessWidget {
           ),
           _buildActionButton(
             context,
-            onPressed: () {},
+            onPressed: onLike,
             icon: likedByViewer ? Icons.favorite : Icons.favorite_outline,
             metric: likeCount,
             color: likedByViewer ? Colors.red : null,
