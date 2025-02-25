@@ -31,20 +31,31 @@ class _BaseScaffoldState extends State<BaseScaffold> {
     Scaffold(
       appBar: _buildAppBar('Search'),
       body: _buildNavigator(1, const SearchPage()),
+      drawer: _buildDrawer(),
     ),
     Scaffold(
       appBar: _buildAppBar('Messages'),
       body: _buildNavigator(2, const MessagesPage()),
+      drawer: _buildDrawer(),
     ),
     Scaffold(
       appBar: _buildAppBar('Notifications'),
       body: _buildNavigator(3, const NotificationsPage()),
+      drawer: _buildDrawer(),
     ),
     Scaffold(
       appBar: _buildAppBar('Profile'),
       body: _buildNavigator(4, const ProfilePage()),
+      drawer: _buildDrawer(),
     ),
   ];
+
+  Widget _buildDrawer() {
+    return Container(
+      width: 350.0,
+      color: Theme.of(context).colorScheme.surfaceContainer,
+    );
+  }
 
   PreferredSizeWidget _buildAppBar(String title) {
     return PreferredSize(
@@ -83,11 +94,20 @@ class _BaseScaffoldState extends State<BaseScaffold> {
   Widget build(BuildContext context) {
     return PopScope(
       child: Scaffold(
-        body: IndexedStack(index: _selectedIndex, children: _pages),
-        drawerEnableOpenDragGesture: true,
-        drawer: Container(
-          width: 350.0,
-          color: Theme.of(context).colorScheme.surfaceContainer,
+        appBar:
+            _selectedIndex == 0
+                ? null
+                : _buildAppBar(_getTitleForIndex(_selectedIndex)),
+        drawer: _selectedIndex == 0 ? null : _buildDrawer(),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            _buildNavigator(0, const HomePage()),
+            _buildNavigator(1, const SearchPage()),
+            _buildNavigator(2, const MessagesPage()),
+            _buildNavigator(3, const NotificationsPage()),
+            _buildNavigator(4, const ProfilePage()),
+          ],
         ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
@@ -134,6 +154,21 @@ class _BaseScaffoldState extends State<BaseScaffold> {
         ),
       ),
     );
+  }
+
+  String _getTitleForIndex(int index) {
+    switch (index) {
+      case 1:
+        return 'Search';
+      case 2:
+        return 'Messages';
+      case 3:
+        return 'Notifications';
+      case 4:
+        return 'Profile';
+      default:
+        return '';
+    }
   }
 
   Widget _buildNavigator(int index, Widget page) {

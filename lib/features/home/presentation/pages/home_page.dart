@@ -7,6 +7,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: _buildDrawer(context),
       appBar: PreferredSize(
         preferredSize: Size(double.infinity, 60.0),
         child: Container(
@@ -27,6 +28,13 @@ class HomePage extends StatelessWidget {
         ),
       ),
       body: FeedComponent(),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Container(
+      width: 350.0,
+      color: Theme.of(context).colorScheme.surfaceContainer,
     );
   }
 }
