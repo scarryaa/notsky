@@ -84,6 +84,11 @@ class _BaseScaffoldState extends State<BaseScaffold> {
     return PopScope(
       child: Scaffold(
         body: IndexedStack(index: _selectedIndex, children: _pages),
+        drawerEnableOpenDragGesture: true,
+        drawer: Container(
+          width: 350.0,
+          color: Theme.of(context).colorScheme.surfaceContainer,
+        ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             border: Border(

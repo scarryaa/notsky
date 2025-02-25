@@ -75,6 +75,7 @@ class _PostComponentState extends State<PostComponent> {
                               ],
                             ),
                             _buildPostContent(),
+                            SizedBox(height: 4.0),
                             PostActionsComponent(
                               likeCount:
                                   state.likeCount ?? widget.post.likeCount,
