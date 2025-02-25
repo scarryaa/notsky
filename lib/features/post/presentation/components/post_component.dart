@@ -99,25 +99,47 @@ class _PostComponentState extends State<PostComponent> {
                           ],
                         ),
                         PostActionsComponent(
-                          likeCount: widget.post.likeCount,
+                          likeCount: state.likeCount ?? widget.post.likeCount,
                           replyCount: widget.post.replyCount,
                           repostCount:
-                              widget.post.repostCount + widget.post.quoteCount,
+                              state.repostCount ??
+                              (widget.post.repostCount +
+                                  widget.post.quoteCount),
                           repostedByViewer: state.isReposted,
                           likedByViewer: state.isLiked,
                           // TODO post actions
                           onLike: () async {
-                            context.read<PostCubit>().toggleLike(
+                            final newLikeCount =
+                                (state.likeCount ?? widget.post.likeCount) +
+                                (state.isLiked ? -1 : 1);
+
+                            await context.read<PostCubit>().toggleLike(
                               widget.post.cid,
                               widget.post.uri,
+                            );
+
+                            context.read<PostCubit>().updateLikeCount(
+                              newLikeCount,
                             );
                           },
                           onReply: () {},
                           onMore: () {},
-                          onRepost: () {
-                            context.read<PostCubit>().toggleRepost(
+                          onRepost: () async {
+                            final currentRepostCount =
+                                state.repostCount ??
+                                (widget.post.repostCount +
+                                    widget.post.quoteCount);
+                            final newRepostCount =
+                                currentRepostCount +
+                                (state.isReposted ? -1 : 1);
+
+                            await context.read<PostCubit>().toggleRepost(
                               widget.post.cid,
                               widget.post.uri,
+                            );
+
+                            context.read<PostCubit>().updateRepostCount(
+                              newRepostCount,
                             );
                           },
                         ),

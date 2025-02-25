@@ -12,6 +12,8 @@ class PostState {
   final String? error;
   final AtUri? likeUri;
   final AtUri? repostUri;
+  final int? likeCount;
+  final int? repostCount;
 
   PostState({
     this.isLiked = false,
@@ -21,6 +23,8 @@ class PostState {
     this.error,
     this.likeUri,
     this.repostUri,
+    this.likeCount,
+    this.repostCount,
   });
 
   PostState copyWith({
@@ -31,6 +35,8 @@ class PostState {
     String? error,
     AtUri? likeUri,
     AtUri? repostUri,
+    int? likeCount,
+    int? repostCount,
   }) {
     return PostState(
       isLiked: isLiked ?? this.isLiked,
@@ -40,6 +46,8 @@ class PostState {
       error: error,
       likeUri: likeUri ?? this.likeUri,
       repostUri: repostUri ?? this.repostUri,
+      likeCount: likeCount ?? this.likeCount,
+      repostCount: repostCount ?? this.repostCount,
     );
   }
 }

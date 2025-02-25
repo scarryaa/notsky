@@ -1,5 +1,4 @@
 import 'package:atproto/core.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/feed/domain/services/bluesky_service.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
@@ -23,6 +22,14 @@ class PostCubit extends Cubit<PostState> {
         repostUri: repostUri,
       ),
     );
+  }
+
+  void updateLikeCount(int count) {
+    emit(state.copyWith(likeCount: count));
+  }
+
+  void updateRepostCount(int count) {
+    emit(state.copyWith(repostCount: count));
   }
 
   Future<void> toggleRepost(String cid, AtUri postUri) async {

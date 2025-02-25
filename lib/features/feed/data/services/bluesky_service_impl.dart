@@ -77,8 +77,8 @@ class BlueskyServiceImpl implements BlueskyService {
   @override
   Future<PostActionResult> repost(String cid, AtUri uri) async {
     try {
-      await _bluesky.feed.repost(cid: cid, uri: uri);
-      return PostActionResult(success: true);
+      final result = await _bluesky.feed.repost(cid: cid, uri: uri);
+      return PostActionResult(success: true, uri: result.data.uri);
     } catch (e) {
       if (isExpiredTokenError(e)) {
         final currentSession = _bluesky.session;
