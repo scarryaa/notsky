@@ -1,3 +1,4 @@
+import 'package:atproto_core/atproto_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
@@ -15,10 +16,23 @@ class FeedCubit extends Cubit<FeedState> {
       ),
       super(FeedInitial());
 
-  Future<void> loadFeed() async {
+  Future<void> loadFeed({AtUri? generatorUri}) async {
     try {
       emit(FeedLoading());
-      final feeds = await _feedRepository.getFeed();
+      final feeds =
+          generatorUri != null
+              ? await _feedRepository.getFeed(generatorUri: generatorUri)
+              : await _feedRepository.getTimeline();
+      emit(FeedLoaded(feeds));
+    } catch (e) {
+      emit(FeedError(e.toString()));
+    }
+  }
+
+  Future<void> loadTimeline() async {
+    try {
+      emit(FeedLoading());
+      final feeds = await _feedRepository.getTimeline();
       emit(FeedLoaded(feeds));
     } catch (e) {
       emit(FeedError(e.toString()));

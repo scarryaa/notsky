@@ -29,6 +29,22 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
+  Future<Feed> getFeed({required AtUri generatorUri}) async {
+    try {
+      return (await _bluesky.feed.getFeed(generatorUri: generatorUri)).data;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+          return (await _bluesky.feed.getFeed(generatorUri: generatorUri)).data;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<Preferences> getPreferences() async {
     try {
       return (await _bluesky.actor.getPreferences()).data;

@@ -27,7 +27,7 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-      body: FeedComponent(),
+      body: FeedComponent(isTimeline: true),
     );
   }
 

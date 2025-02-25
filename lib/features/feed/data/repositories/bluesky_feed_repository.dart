@@ -1,5 +1,5 @@
+import 'package:atproto_core/atproto_core.dart';
 import 'package:bluesky/bluesky.dart';
-import 'package:bluesky/moderation.dart';
 import 'package:notsky/features/feed/domain/repositories/feed_repository.dart';
 import 'package:notsky/features/feed/domain/services/bluesky_service.dart';
 
@@ -9,13 +9,14 @@ class BlueskyFeedRepository implements FeedRepository {
   BlueskyFeedRepository(this._blueskyService);
 
   @override
-  Future<Feed> getFeed() async {
+  Future<Feed> getTimeline() async {
+    return await _blueskyService.getTimeline();
+  }
+
+  @override
+  Future<Feed> getFeed({required AtUri generatorUri}) async {
     try {
-      final preferences = await _blueskyService.getPreferences();
-      final moderationPrefs = preferences.getModerationPrefs();
-      final feeds = await _blueskyService.getTimeline(
-        headers: getLabelerHeaders(moderationPrefs),
-      );
+      final feeds = await _blueskyService.getFeed(generatorUri: generatorUri);
 
       return feeds;
     } catch (e) {

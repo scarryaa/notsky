@@ -1,3 +1,4 @@
+import 'package:atproto_core/atproto_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
@@ -7,7 +8,14 @@ import 'package:notsky/features/post/presentation/components/base_post_component
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 
 class FeedComponent extends StatelessWidget {
-  const FeedComponent({super.key});
+  final bool isTimeline;
+  final AtUri? generatorUri;
+
+  const FeedComponent({this.isTimeline = false, this.generatorUri, super.key})
+    : assert(
+        isTimeline || generatorUri != null,
+        'Either isTimeline must be true or generatorUri must be provided',
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +24,7 @@ class FeedComponent extends StatelessWidget {
           (context) => FeedCubit(
             context.read<AuthCubit>().state,
             context.read<AuthCubit>(),
-          )..loadFeed(),
+          )..loadFeed(generatorUri: isTimeline ? null : generatorUri),
       child: BlocBuilder<FeedCubit, FeedState>(
         builder: (context, state) {
           if (state is FeedLoading) {
@@ -47,20 +55,26 @@ class FeedComponent extends StatelessWidget {
                     ),
               ),
               onRefresh: () {
-                return context.read<FeedCubit>().loadFeed();
+                return context.read<FeedCubit>().loadFeed(
+                  generatorUri: isTimeline ? null : generatorUri,
+                );
               },
             );
           } else if (state is FeedError) {
             return RefreshIndicator(
               child: Center(child: Text('Error: ${state.message}')),
               onRefresh: () {
-                return context.read<FeedCubit>().loadFeed();
+                return context.read<FeedCubit>().loadFeed(
+                  generatorUri: isTimeline ? null : generatorUri,
+                );
               },
             );
           }
           return RefreshIndicator(
             onRefresh: () {
-              return context.read<FeedCubit>().loadFeed();
+              return context.read<FeedCubit>().loadFeed(
+                generatorUri: isTimeline ? null : generatorUri,
+              );
             },
             child: Center(child: Text('No feed available')),
           );
