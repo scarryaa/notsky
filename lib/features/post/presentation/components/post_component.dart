@@ -1,6 +1,7 @@
 import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:notsky/features/post/presentation/components/avatar_component.dart';
 import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
@@ -29,45 +30,36 @@ class _PostComponentState extends State<PostComponent> {
     );
   }
 
+  void _handlePostTap() {
+    Navigator.of(context).push(
+      NoBackgroundCupertinoPageRoute(
+        builder:
+            (context) =>
+                PostDetailPage(post: widget.post, reason: widget.reason),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PostCubit, PostState>(
       builder:
           (context, state) => InkWell(
             splashColor: Colors.transparent,
-            onTap: () {
-              Navigator.of(context).push(
-                NoBackgroundCupertinoPageRoute(
-                  builder:
-                      (context) => PostDetailPage(
-                        post: widget.post,
-                        reason: widget.reason,
-                      ),
-                ),
-              );
-            },
+            onTap: _handlePostTap,
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      if (widget.reason != null &&
-                          widget.reason?.data is ReasonRepost)
-                        _buildReasonRepost(widget.reason!.data as ReasonRepost),
-                    ],
-                  ),
+                  _buildReasonRepost(widget.reason),
                   SizedBox(height: 2.0),
                   Row(
                     spacing: 8.0,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipOval(
-                        child: Image.network(
-                          widget.post.author.avatar ?? '',
-                          width: 40,
-                          height: 40,
-                        ),
+                      AvatarComponent(
+                        avatar: widget.post.author.avatar,
+                        size: 40.0,
                       ),
                       Expanded(
                         child: Column(
@@ -76,52 +68,13 @@ class _PostComponentState extends State<PostComponent> {
                             Row(
                               spacing: 4.0,
                               children: [
-                                Flexible(
-                                  flex: 1,
-                                  child: Text(
-                                    widget.post.author.displayName ?? '',
-                                    softWrap: false,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Flexible(
-                                  child: Text(
-                                    widget.post.author.handle,
-                                    softWrap: false,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ),
+                                _buildDisplayName(),
+                                _buildHandle(),
                                 Text('•'),
-                                Text(
-                                  getRelativeTime(widget.post.indexedAt),
-                                  style: TextStyle(
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
+                                _buildIndexedAt(),
                               ],
                             ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    widget.post.record.text,
-                                    softWrap: true,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            _buildPostContent(),
                             PostActionsComponent(
                               likeCount:
                                   state.likeCount ?? widget.post.likeCount,
@@ -180,21 +133,67 @@ class _PostComponentState extends State<PostComponent> {
     );
   }
 
-  Widget _buildReasonRepost(ReasonRepost reasonRepost) {
-    return GestureDetector(
-      onTap: () {
-        // TODO go to actor profile
-      },
-      child: Row(
-        spacing: 4.0,
-        children: [
-          SizedBox(width: 28.0),
-          Icon(Icons.repeat, size: 12.0),
-          Text(
-            'Reposted by ${reasonRepost.by.displayName}',
-            style: TextStyle(fontSize: 12.0),
+  Widget _buildDisplayName() {
+    return Flexible(
+      flex: 1,
+      child: Text(
+        widget.post.author.displayName ?? '',
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildHandle() {
+    return Flexible(
+      child: Text(
+        '@${widget.post.author.handle}',
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+
+  Widget _buildReasonRepost(Reason? reason) {
+    return Row(
+      children: [
+        if (widget.reason != null && widget.reason?.data is ReasonRepost)
+          GestureDetector(
+            onTap: () {
+              // TODO go to actor profile
+            },
+            child: Row(
+              spacing: 4.0,
+              children: [
+                SizedBox(width: 28.0),
+                Icon(Icons.repeat, size: 12.0),
+                Text(
+                  'Reposted by ${(reason?.data as ReasonRepost).by.displayName}',
+                  style: TextStyle(fontSize: 12.0),
+                ),
+              ],
+            ),
           ),
-        ],
+      ],
+    );
+  }
+
+  Widget _buildIndexedAt() {
+    return Text(
+      getRelativeTime(widget.post.indexedAt),
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+    );
+  }
+
+  Widget _buildPostContent() {
+    return Text(
+      widget.post.record.text,
+      softWrap: true,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontSize: 14.0,
       ),
     );
   }
