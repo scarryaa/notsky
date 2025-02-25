@@ -34,6 +34,7 @@ class _PostComponentState extends State<PostComponent> {
     return BlocBuilder<PostCubit, PostState>(
       builder:
           (context, state) => InkWell(
+            splashColor: Colors.transparent,
             onTap: () {
               Navigator.of(context).push(
                 NoBackgroundCupertinoPageRoute(

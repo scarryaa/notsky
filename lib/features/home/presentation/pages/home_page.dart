@@ -15,7 +15,11 @@ class HomePage extends StatelessWidget {
               bottom: BorderSide(color: Theme.of(context).colorScheme.outline),
             ),
           ),
-          child: AppBar(title: Text('Home')),
+          child: AppBar(
+            title: Text('Home'),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            scrolledUnderElevation: 0,
+          ),
         ),
       ),
       body: FeedComponent(),
