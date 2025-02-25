@@ -90,9 +90,10 @@ class PostActionsComponent extends StatelessWidget {
     Alignment iconAlignment = Alignment.center,
   }) {
     return SizedBox(
-      width: 80.0,
+      width: 65.0,
       child: Row(
         mainAxisAlignment: mainAxisAlignment,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Transform.translate(
             offset: isFirst ? Offset(-5, 0) : Offset.zero,
@@ -108,8 +109,8 @@ class PostActionsComponent extends StatelessWidget {
             ),
           ),
           if (metric != null)
-            Flexible(
-              fit: FlexFit.loose,
+            SizedBox(
+              width: 30,
               child: Transform.translate(
                 offset: isFirst ? Offset(-5, 0) : Offset.zero,
                 child: Text(
