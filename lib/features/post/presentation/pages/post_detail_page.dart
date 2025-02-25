@@ -23,7 +23,9 @@ class PostDetailPage extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.outline,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.25),
                 ),
               ),
             ),
@@ -37,7 +39,13 @@ class PostDetailPage extends StatelessWidget {
             ),
           ),
         ),
-        body: BasePostComponent(post: post, reason: reason, detailed: true),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              BasePostComponent(post: post, reason: reason, detailed: true),
+            ],
+          ),
+        ),
       ),
     );
   }

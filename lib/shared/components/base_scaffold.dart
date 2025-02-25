@@ -55,7 +55,9 @@ class _BaseScaffoldState extends State<BaseScaffold> {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outline,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.25),
                   ),
                 ),
               ),
@@ -85,7 +87,11 @@ class _BaseScaffoldState extends State<BaseScaffold> {
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: Theme.of(context).colorScheme.outline),
+              top: BorderSide(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.25),
+              ),
             ),
           ),
           child: NavigationBar(

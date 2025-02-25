@@ -41,7 +41,7 @@ class FeedComponent extends StatelessWidget {
                       height: 1.0,
                       color: Theme.of(
                         context,
-                      ).colorScheme.outline.withValues(alpha: 0.2),
+                      ).colorScheme.outline.withValues(alpha: 0.25),
                     ),
               ),
               onRefresh: () {
@@ -49,9 +49,19 @@ class FeedComponent extends StatelessWidget {
               },
             );
           } else if (state is FeedError) {
-            return Center(child: Text('Error: ${state.message}'));
+            return RefreshIndicator(
+              child: Center(child: Text('Error: ${state.message}')),
+              onRefresh: () {
+                return context.read<FeedCubit>().loadFeed();
+              },
+            );
           }
-          return Center(child: Text('No feed available'));
+          return RefreshIndicator(
+            onRefresh: () {
+              return context.read<FeedCubit>().loadFeed();
+            },
+            child: Center(child: Text('No feed available')),
+          );
         },
       ),
     );
