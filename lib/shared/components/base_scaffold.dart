@@ -26,30 +26,6 @@ class _BaseScaffoldState extends State<BaseScaffold> {
     GlobalKey<NavigatorState>(),
   ];
 
-  late final List<Widget> _pages = [
-    _buildNavigator(0, const HomePage()),
-    Scaffold(
-      appBar: _buildAppBar('Search'),
-      body: _buildNavigator(1, const SearchPage()),
-      drawer: _buildDrawer(),
-    ),
-    Scaffold(
-      appBar: _buildAppBar('Messages'),
-      body: _buildNavigator(2, const MessagesPage()),
-      drawer: _buildDrawer(),
-    ),
-    Scaffold(
-      appBar: _buildAppBar('Notifications'),
-      body: _buildNavigator(3, const NotificationsPage()),
-      drawer: _buildDrawer(),
-    ),
-    Scaffold(
-      appBar: _buildAppBar('Profile'),
-      body: _buildNavigator(4, const ProfilePage()),
-      drawer: _buildDrawer(),
-    ),
-  ];
-
   Widget _buildDrawer() {
     return Container(
       width: 350.0,

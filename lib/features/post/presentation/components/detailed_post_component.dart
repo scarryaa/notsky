@@ -7,10 +7,26 @@ import 'package:notsky/features/post/presentation/components/post_actions_compon
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 
-class DetailedPostComponent extends StatelessWidget {
+class DetailedPostComponent extends StatefulWidget {
   const DetailedPostComponent({super.key, required this.post});
 
   final Post post;
+
+  @override
+  State<DetailedPostComponent> createState() => _DetailedPostComponentState();
+}
+
+class _DetailedPostComponentState extends State<DetailedPostComponent> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<PostCubit>().initializePost(
+      widget.post.viewer.isLiked,
+      widget.post.viewer.like,
+      widget.post.viewer.isReposted,
+      widget.post.viewer.repost,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +53,10 @@ class DetailedPostComponent extends StatelessWidget {
                     mainAxisSize: MainAxisSize.max,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AvatarComponent(avatar: post.author.avatar, size: 40.0),
+                      AvatarComponent(
+                        avatar: widget.post.author.avatar,
+                        size: 40.0,
+                      ),
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,27 +76,27 @@ class DetailedPostComponent extends StatelessWidget {
                       SizedBox(height: 6.0),
                       _buildIndexedAt(context),
                       SizedBox(height: 8.0),
-                      _buildStats(context),
+                      _buildStats(context, state),
                       SizedBox(height: 4.0),
                       PostActionsComponent(
                         iconSize: 20.0,
                         indentEnd: false,
-                        likeCount: state.likeCount ?? post.likeCount,
-                        replyCount: post.replyCount,
+                        likeCount: state.likeCount ?? widget.post.likeCount,
+                        replyCount: widget.post.replyCount,
                         repostCount:
                             state.repostCount ??
-                            (post.repostCount + post.quoteCount),
+                            (widget.post.repostCount + widget.post.quoteCount),
                         repostedByViewer: state.isReposted,
                         likedByViewer: state.isLiked,
                         // TODO post actions
                         onLike: () async {
                           final newLikeCount =
-                              (state.likeCount ?? post.likeCount) +
+                              (state.likeCount ?? widget.post.likeCount) +
                               (state.isLiked ? -1 : 1);
 
                           await context.read<PostCubit>().toggleLike(
-                            post.cid,
-                            post.uri,
+                            widget.post.cid,
+                            widget.post.uri,
                           );
 
                           context.read<PostCubit>().updateLikeCount(
@@ -89,13 +108,14 @@ class DetailedPostComponent extends StatelessWidget {
                         onRepost: () async {
                           final currentRepostCount =
                               state.repostCount ??
-                              (post.repostCount + post.quoteCount);
+                              (widget.post.repostCount +
+                                  widget.post.quoteCount);
                           final newRepostCount =
                               currentRepostCount + (state.isReposted ? -1 : 1);
 
                           await context.read<PostCubit>().toggleRepost(
-                            post.cid,
-                            post.uri,
+                            widget.post.cid,
+                            widget.post.uri,
                           );
 
                           context.read<PostCubit>().updateRepostCount(
@@ -116,7 +136,7 @@ class DetailedPostComponent extends StatelessWidget {
     return Flexible(
       flex: 1,
       child: Text(
-        post.author.displayName ?? '',
+        widget.post.author.displayName ?? '',
         softWrap: false,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(fontWeight: FontWeight.bold),
@@ -127,7 +147,7 @@ class DetailedPostComponent extends StatelessWidget {
   Widget _buildHandle(BuildContext context) {
     return Flexible(
       child: Text(
-        '@${post.author.handle}',
+        '@${widget.post.author.handle}',
         softWrap: false,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -137,7 +157,7 @@ class DetailedPostComponent extends StatelessWidget {
 
   Widget _buildPostContent(BuildContext context) {
     return Text(
-      post.record.text,
+      widget.post.record.text,
       softWrap: true,
       style: TextStyle(
         color: Theme.of(context).colorScheme.onSurface,
@@ -148,7 +168,7 @@ class DetailedPostComponent extends StatelessWidget {
 
   Widget _buildIndexedAt(BuildContext context) {
     return Text(
-      formatTime(post.indexedAt),
+      formatTime(widget.post.indexedAt),
       style: TextStyle(
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontSize: 12.0,
@@ -157,24 +177,44 @@ class DetailedPostComponent extends StatelessWidget {
   }
 
   String formatTime(DateTime indexedAt) {
-    return DateFormat('MMMM d, yyyy \'at\' h:mm a').format(indexedAt);
+    return DateFormat('MMMM d, yyyy \'at\' h:mm a').format(indexedAt.toLocal());
   }
 
-  Widget _buildStats(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.symmetric(
-          horizontal: BorderSide(
-            color: Theme.of(
-              context,
-            ).colorScheme.outline.withValues(alpha: 0.25),
+  Widget _buildStats(BuildContext context, PostState state) {
+    return ((state.repostCount ?? widget.post.repostCount) > 0 ||
+            widget.post.quoteCount > 0 ||
+            (state.likeCount ?? widget.post.likeCount) > 0)
+        ? Container(
+          decoration: BoxDecoration(
+            border: Border.symmetric(
+              horizontal: BorderSide(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.25),
+              ),
+            ),
           ),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 6.0),
-        child: Row(children: [Text('1 like')]),
-      ),
-    );
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 6.0),
+            child: Row(
+              spacing: 14.0,
+              children: [
+                if ((state.repostCount ?? widget.post.repostCount) > 0)
+                  Text(
+                    '${state.repostCount ?? widget.post.repostCount} repost${(state.repostCount ?? widget.post.repostCount) > 1 ? 's' : ''}',
+                  ),
+                if (widget.post.quoteCount > 0)
+                  Text(
+                    '${widget.post.quoteCount} quote${widget.post.quoteCount > 1 ? 's' : ''}',
+                  ),
+                if ((state.likeCount ?? widget.post.likeCount) > 0)
+                  Text(
+                    '${state.likeCount ?? widget.post.likeCount} like${(state.likeCount ?? widget.post.likeCount) > 1 ? 's' : ''}',
+                  ),
+              ],
+            ),
+          ),
+        )
+        : SizedBox.shrink();
   }
 }
