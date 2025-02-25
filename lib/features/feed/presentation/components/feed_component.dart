@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_state.dart';
-import 'package:notsky/features/post/presentation/components/post_component.dart';
+import 'package:notsky/features/post/presentation/components/base_post_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 
 class FeedComponent extends StatelessWidget {
@@ -30,7 +30,7 @@ class FeedComponent extends StatelessWidget {
                           (context) => PostCubit(
                             context.read<AuthCubit>().getBlueskyService(),
                           ),
-                      child: PostComponent(
+                      child: BasePostComponent(
                         post: state.feeds.feed[index].post,
                         reason: state.feeds.feed[index].reason,
                       ),

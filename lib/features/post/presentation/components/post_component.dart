@@ -1,9 +1,12 @@
 import 'package:bluesky/bluesky.dart' hide Image;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
+import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
+import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
 
 class PostComponent extends StatefulWidget {
   const PostComponent({super.key, required this.post, required this.reason});
@@ -33,7 +36,15 @@ class _PostComponentState extends State<PostComponent> {
       builder:
           (context, state) => InkWell(
             onTap: () {
-              // TODO post detail view
+              Navigator.of(context).push(
+                NoBackgroundCupertinoPageRoute(
+                  builder:
+                      (context) => PostDetailPage(
+                        post: widget.post,
+                        reason: widget.reason,
+                      ),
+                ),
+              );
             },
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
