@@ -30,7 +30,10 @@ class FeedComponent extends StatelessWidget {
                           (context) => PostCubit(
                             context.read<AuthCubit>().getBlueskyService(),
                           ),
-                      child: PostComponent(post: state.feeds.feed[index].post),
+                      child: PostComponent(
+                        post: state.feeds.feed[index].post,
+                        reason: state.feeds.feed[index].reason,
+                      ),
                     ),
                 itemCount: state.feeds.feed.length,
                 separatorBuilder:

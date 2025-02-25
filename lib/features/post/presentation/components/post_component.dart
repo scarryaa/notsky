@@ -6,8 +6,9 @@ import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 
 class PostComponent extends StatefulWidget {
-  const PostComponent({super.key, required this.post});
+  const PostComponent({super.key, required this.post, required this.reason});
 
+  final Reason? reason;
   final Post post;
 
   @override
@@ -36,120 +37,154 @@ class _PostComponentState extends State<PostComponent> {
             },
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-              child: Row(
-                spacing: 8.0,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
                 children: [
-                  ClipOval(
-                    child: Image.network(
-                      widget.post.author.avatar ?? '',
-                      width: 40,
-                      height: 40,
-                    ),
+                  Row(
+                    children: [
+                      if (widget.reason != null &&
+                          widget.reason?.data is ReasonRepost)
+                        _buildReasonRepost(widget.reason!.data as ReasonRepost),
+                    ],
                   ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          spacing: 4.0,
+                  SizedBox(height: 2.0),
+                  Row(
+                    spacing: 8.0,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipOval(
+                        child: Image.network(
+                          widget.post.author.avatar ?? '',
+                          width: 40,
+                          height: 40,
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Flexible(
-                              flex: 1,
-                              child: Text(
-                                widget.post.author.displayName ?? '',
-                                softWrap: false,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Flexible(
-                              child: Text(
-                                widget.post.author.handle,
-                                softWrap: false,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
+                            Row(
+                              spacing: 4.0,
+                              children: [
+                                Flexible(
+                                  flex: 1,
+                                  child: Text(
+                                    widget.post.author.displayName ?? '',
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                Flexible(
+                                  child: Text(
+                                    widget.post.author.handle,
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                                Text('•'),
+                                Text(
+                                  getRelativeTime(widget.post.indexedAt),
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text('•'),
-                            Text(
-                              getRelativeTime(widget.post.indexedAt),
-                              style: TextStyle(
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    widget.post.record.text,
+                                    softWrap: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            PostActionsComponent(
+                              likeCount:
+                                  state.likeCount ?? widget.post.likeCount,
+                              replyCount: widget.post.replyCount,
+                              repostCount:
+                                  state.repostCount ??
+                                  (widget.post.repostCount +
+                                      widget.post.quoteCount),
+                              repostedByViewer: state.isReposted,
+                              likedByViewer: state.isLiked,
+                              // TODO post actions
+                              onLike: () async {
+                                final newLikeCount =
+                                    (state.likeCount ?? widget.post.likeCount) +
+                                    (state.isLiked ? -1 : 1);
+
+                                await context.read<PostCubit>().toggleLike(
+                                  widget.post.cid,
+                                  widget.post.uri,
+                                );
+
+                                context.read<PostCubit>().updateLikeCount(
+                                  newLikeCount,
+                                );
+                              },
+                              onReply: () {},
+                              onMore: () {},
+                              onRepost: () async {
+                                final currentRepostCount =
+                                    state.repostCount ??
+                                    (widget.post.repostCount +
+                                        widget.post.quoteCount);
+                                final newRepostCount =
+                                    currentRepostCount +
+                                    (state.isReposted ? -1 : 1);
+
+                                await context.read<PostCubit>().toggleRepost(
+                                  widget.post.cid,
+                                  widget.post.uri,
+                                );
+
+                                context.read<PostCubit>().updateRepostCount(
+                                  newRepostCount,
+                                );
+                              },
                             ),
                           ],
                         ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                widget.post.record.text,
-                                softWrap: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                        PostActionsComponent(
-                          likeCount: state.likeCount ?? widget.post.likeCount,
-                          replyCount: widget.post.replyCount,
-                          repostCount:
-                              state.repostCount ??
-                              (widget.post.repostCount +
-                                  widget.post.quoteCount),
-                          repostedByViewer: state.isReposted,
-                          likedByViewer: state.isLiked,
-                          // TODO post actions
-                          onLike: () async {
-                            final newLikeCount =
-                                (state.likeCount ?? widget.post.likeCount) +
-                                (state.isLiked ? -1 : 1);
-
-                            await context.read<PostCubit>().toggleLike(
-                              widget.post.cid,
-                              widget.post.uri,
-                            );
-
-                            context.read<PostCubit>().updateLikeCount(
-                              newLikeCount,
-                            );
-                          },
-                          onReply: () {},
-                          onMore: () {},
-                          onRepost: () async {
-                            final currentRepostCount =
-                                state.repostCount ??
-                                (widget.post.repostCount +
-                                    widget.post.quoteCount);
-                            final newRepostCount =
-                                currentRepostCount +
-                                (state.isReposted ? -1 : 1);
-
-                            await context.read<PostCubit>().toggleRepost(
-                              widget.post.cid,
-                              widget.post.uri,
-                            );
-
-                            context.read<PostCubit>().updateRepostCount(
-                              newRepostCount,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
+    );
+  }
+
+  Widget _buildReasonRepost(ReasonRepost reasonRepost) {
+    return GestureDetector(
+      onTap: () {
+        // TODO go to actor profile
+      },
+      child: Row(
+        spacing: 4.0,
+        children: [
+          SizedBox(width: 28.0),
+          Icon(Icons.repeat, size: 12.0),
+          Text(
+            'Reposted by ${reasonRepost.by.displayName}',
+            style: TextStyle(fontSize: 12.0),
+          ),
+        ],
+      ),
     );
   }
 
