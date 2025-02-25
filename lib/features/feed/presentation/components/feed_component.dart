@@ -24,17 +24,19 @@ class FeedComponent extends StatelessWidget {
           } else if (state is FeedLoaded) {
             return RefreshIndicator(
               child: ListView.separated(
-                itemBuilder:
-                    (context, index) => BlocProvider(
-                      create:
-                          (context) => PostCubit(
-                            context.read<AuthCubit>().getBlueskyService(),
-                          ),
-                      child: BasePostComponent(
-                        post: state.feeds.feed[index].post,
-                        reason: state.feeds.feed[index].reason,
-                      ),
+                itemBuilder: (context, index) {
+                  final feedItem = state.feeds.feed[index];
+                  return BlocProvider(
+                    create:
+                        (context) => PostCubit(
+                          context.read<AuthCubit>().getBlueskyService(),
+                        ),
+                    child: BasePostComponent(
+                      post: feedItem.post,
+                      reason: feedItem.reason,
                     ),
+                  );
+                },
                 itemCount: state.feeds.feed.length,
                 separatorBuilder:
                     (context, index) => Divider(

@@ -21,10 +21,13 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
   void initState() {
     super.initState();
     context.read<PostCubit>().initializePost(
+      widget.post.uri.toString(),
       widget.post.viewer.isLiked,
       widget.post.viewer.like,
       widget.post.viewer.isReposted,
       widget.post.viewer.repost,
+      widget.post.likeCount,
+      widget.post.repostCount + widget.post.quoteCount,
     );
   }
 
