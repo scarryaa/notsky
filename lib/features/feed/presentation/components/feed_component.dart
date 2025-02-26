@@ -73,6 +73,8 @@ class _FeedComponentState extends State<FeedComponent> {
               child: ListView.separated(
                 controller: _scrollController,
                 itemBuilder: (context, index) {
+                  final feedItem = state.feeds.feed[index];
+
                   if (index == state.feeds.feed.length) {
                     return Center(
                       child: Padding(
@@ -82,16 +84,16 @@ class _FeedComponentState extends State<FeedComponent> {
                     );
                   }
 
-                  final feedItem = state.feeds.feed[index];
                   return BlocProvider(
                     create:
                         (context) => PostCubit(
                           context.read<AuthCubit>().getBlueskyService(),
                         ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (feedItem.reply != null) ...[
-                          if ((feedItem.reply!.root.data as Post).uri !=
+                          if (feedItem.post.record.reply?.root.uri !=
                               (feedItem.reply!.parent.data as Post).uri)
                             Stack(
                               children: [
@@ -101,29 +103,75 @@ class _FeedComponentState extends State<FeedComponent> {
                                   reason: feedItem.reason,
                                   reply: feedItem.reply,
                                 ),
-                                Positioned(
-                                  left: 27,
-                                  top: 56,
-                                  bottom: 0,
-                                  width: 2,
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return CustomPaint(
-                                        size: Size(2, constraints.maxHeight),
-                                        painter: DashedLinePainter(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outline
-                                              .withValues(alpha: 0.25),
-                                          dashLength: 4,
-                                          dashGap: 4,
-                                        ),
-                                      );
-                                    },
+                                if (feedItem.post.record.reply?.root.uri !=
+                                    (feedItem.reply?.parent.data as Post)
+                                        .record
+                                        .reply
+                                        ?.parent
+                                        .uri)
+                                  Positioned(
+                                    left: 27,
+                                    top: 56,
+                                    bottom: 0,
+                                    width: 2,
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return CustomPaint(
+                                          size: Size(2, constraints.maxHeight),
+                                          painter: DashedLinePainter(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .outline
+                                                .withValues(alpha: 0.25),
+                                            dashLength: 4,
+                                            dashGap: 4,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  )
+                                else
+                                  Positioned(
+                                    left: 27,
+                                    top: 56,
+                                    bottom: 0,
+                                    width: 2,
+                                    child: Container(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline
+                                          .withValues(alpha: 0.25),
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
+                          if (feedItem.post.record.reply?.root.uri !=
+                              (feedItem.reply!.parent.data as Post).uri)
+                            if (feedItem.post.record.reply?.root.uri !=
+                                (feedItem.reply?.parent.data as Post)
+                                    .record
+                                    .reply
+                                    ?.parent
+                                    .uri)
+                              Row(
+                                children: [
+                                  SizedBox(width: 60.0),
+                                  GestureDetector(
+                                    onTap: () {
+                                      // TODO show full thread
+                                    },
+                                    child: Text(
+                                      'View full thread',
+                                      style: TextStyle(
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                           // Parent post
                           Stack(
                             children: [
