@@ -15,16 +15,15 @@ class FeedCubit extends Cubit<FeedState> {
     try {
       final Feed feeds = await _fetchFeed(generatorUri: generatorUri);
 
-      final Set<String> uniquePostUris = <String>{};
-      final List<FeedView> uniqueFeed = [];
+      final Map<String, FeedView> uniqueFeedMap = {};
 
       for (final feedView in feeds.feed) {
+        print(feedView);
         final postUri = feedView.post.uri.toString();
-        if (!uniquePostUris.contains(postUri)) {
-          uniquePostUris.add(postUri);
-          uniqueFeed.add(feedView);
-        }
+        uniqueFeedMap[postUri] = feedView;
       }
+
+      final List<FeedView> uniqueFeed = uniqueFeedMap.values.toList();
 
       final Feed uniqueFeeds = Feed(feed: uniqueFeed, cursor: feeds.cursor);
 
@@ -55,24 +54,17 @@ class FeedCubit extends Cubit<FeedState> {
         cursor: currentState.cursor,
       );
 
-      final Set<String> existingPostUris =
-          currentState.feeds.feed
-              .map((feedView) => feedView.post.uri.toString())
-              .toSet();
+      final Map<String, FeedView> feedMap = {
+        for (var feedView in currentState.feeds.feed)
+          feedView.post.uri.toString(): feedView,
+      };
 
-      final List<FeedView> uniqueNewFeed =
-          newFeeds.feed
-              .where(
-                (feedView) =>
-                    !existingPostUris.contains(feedView.post.uri.toString()),
-              )
-              .toList();
+      for (final feedView in newFeeds.feed) {
+        final postUri = feedView.post.uri.toString();
+        feedMap[postUri] = feedView;
+      }
 
-      // Combine with existing feed
-      final List<FeedView> combinedFeed = [
-        ...currentState.feeds.feed,
-        ...uniqueNewFeed,
-      ];
+      final List<FeedView> combinedFeed = feedMap.values.toList();
 
       final Feed combinedFeeds = Feed(
         feed: combinedFeed,
@@ -84,7 +76,7 @@ class FeedCubit extends Cubit<FeedState> {
           combinedFeeds,
           isLoadingMore: false,
           cursor: newFeeds.cursor,
-          hasMore: uniqueNewFeed.isNotEmpty,
+          hasMore: newFeeds.feed.isNotEmpty,
         ),
       );
     } catch (e) {

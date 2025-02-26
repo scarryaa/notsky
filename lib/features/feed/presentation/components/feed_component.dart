@@ -6,6 +6,7 @@ import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/feed/presentation/components/dashed_line_painter.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_state.dart';
+import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/base_post_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 
@@ -93,13 +94,23 @@ class _FeedComponentState extends State<FeedComponent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (feedItem.reply != null) ...[
-                          if (feedItem.post.record.reply?.root.uri !=
+                          if (feedItem.reply!.parent.data is NotFoundPost)
+                            BasePostComponent(
+                              postContent: MissingPost(
+                                feedItem.reply!.root.data as NotFoundPost,
+                              ),
+                              reason: feedItem.reason,
+                              reply: feedItem.reply,
+                            )
+                          else if (feedItem.post.record.reply?.root.uri !=
                               (feedItem.reply!.parent.data as Post).uri)
                             Stack(
                               children: [
                                 // Root post
                                 BasePostComponent(
-                                  post: feedItem.reply!.root.data as Post,
+                                  postContent: RegularPost(
+                                    feedItem.reply!.root.data as Post,
+                                  ),
                                   reason: feedItem.reason,
                                   reply: feedItem.reply,
                                 ),
@@ -145,7 +156,10 @@ class _FeedComponentState extends State<FeedComponent> {
                                   ),
                               ],
                             ),
-                          if (feedItem.post.record.reply?.root.uri !=
+                          if (feedItem.reply!.parent.data is NotFoundPost)
+                            // Handled above
+                            SizedBox.shrink()
+                          else if (feedItem.post.record.reply?.root.uri !=
                               (feedItem.reply!.parent.data as Post).uri)
                             if (feedItem.post.record.reply?.root.uri !=
                                 (feedItem.reply?.parent.data as Post)
@@ -175,11 +189,22 @@ class _FeedComponentState extends State<FeedComponent> {
                           // Parent post
                           Stack(
                             children: [
-                              BasePostComponent(
-                                post: feedItem.reply!.parent.data as Post,
-                                reason: feedItem.reason,
-                                reply: feedItem.reply,
-                              ),
+                              if (feedItem.reply!.parent.data is NotFoundPost)
+                                BasePostComponent(
+                                  postContent: MissingPost(
+                                    feedItem.reply!.parent.data as NotFoundPost,
+                                  ),
+                                  reason: feedItem.reason,
+                                  reply: feedItem.reply,
+                                )
+                              else
+                                BasePostComponent(
+                                  postContent: RegularPost(
+                                    feedItem.reply!.parent.data as Post,
+                                  ),
+                                  reason: feedItem.reason,
+                                  reply: feedItem.reply,
+                                ),
                               Positioned(
                                 left: 27,
                                 top: 56,
@@ -196,7 +221,7 @@ class _FeedComponentState extends State<FeedComponent> {
                         ],
                         // Reply post
                         BasePostComponent(
-                          post: feedItem.post,
+                          postContent: RegularPost(feedItem.post),
                           reason: feedItem.reason,
                           reply: feedItem.reply,
                         ),
