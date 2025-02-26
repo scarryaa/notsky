@@ -8,17 +8,19 @@ class BasePostComponent extends StatelessWidget {
     super.key,
     required this.post,
     required this.reason,
+    required this.reply,
     this.detailed = false,
   });
 
   final Post post;
   final Reason? reason;
+  final Reply? reply;
   final bool detailed;
 
   @override
   Widget build(BuildContext context) {
     return detailed
         ? DetailedPostComponent(post: post)
-        : PostComponent(post: post, reason: reason);
+        : PostComponent(post: post, reason: reason, reply: reply);
   }
 }

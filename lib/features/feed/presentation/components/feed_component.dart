@@ -1,4 +1,5 @@
 import 'package:atproto_core/atproto_core.dart';
+import 'package:bluesky/bluesky.dart' hide ListView;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
@@ -86,9 +87,37 @@ class _FeedComponentState extends State<FeedComponent> {
                         (context) => PostCubit(
                           context.read<AuthCubit>().getBlueskyService(),
                         ),
-                    child: BasePostComponent(
-                      post: feedItem.post,
-                      reason: feedItem.reason,
+                    child: Column(
+                      children: [
+                        if (feedItem.reply != null)
+                          Stack(
+                            children: [
+                              // Parent post
+                              BasePostComponent(
+                                post: feedItem.reply!.parent.data as Post,
+                                reason: feedItem.reason,
+                                reply: feedItem.reply,
+                              ),
+                              Positioned(
+                                left: 27,
+                                top: 56,
+                                bottom: 0,
+                                width: 2,
+                                child: Container(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withValues(alpha: 0.25),
+                                ),
+                              ),
+                            ],
+                          ),
+                        // Reply post
+                        BasePostComponent(
+                          post: feedItem.post,
+                          reason: feedItem.reason,
+                          reply: feedItem.reply,
+                        ),
+                      ],
                     ),
                   );
                 },

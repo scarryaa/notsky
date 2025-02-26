@@ -9,10 +9,16 @@ import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
 
 class PostComponent extends StatefulWidget {
-  const PostComponent({super.key, required this.post, required this.reason});
+  const PostComponent({
+    super.key,
+    required this.post,
+    required this.reason,
+    required this.reply,
+  });
 
   final Reason? reason;
   final Post post;
+  final Reply? reply;
 
   @override
   State<PostComponent> createState() => _PostComponentState();
@@ -37,8 +43,11 @@ class _PostComponentState extends State<PostComponent> {
     Navigator.of(context).push(
       NoBackgroundCupertinoPageRoute(
         builder:
-            (context) =>
-                PostDetailPage(post: widget.post, reason: widget.reason),
+            (context) => PostDetailPage(
+              post: widget.post,
+              reply: widget.reply,
+              reason: widget.reason,
+            ),
       ),
     );
   }

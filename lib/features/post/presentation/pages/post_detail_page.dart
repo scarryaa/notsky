@@ -6,10 +6,16 @@ import 'package:notsky/features/post/presentation/components/base_post_component
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 
 class PostDetailPage extends StatelessWidget {
-  const PostDetailPage({super.key, required this.post, required this.reason});
+  const PostDetailPage({
+    super.key,
+    required this.post,
+    required this.reason,
+    required this.reply,
+  });
 
   final Post post;
   final Reason? reason;
+  final Reply? reply;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +48,12 @@ class PostDetailPage extends StatelessWidget {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              BasePostComponent(post: post, reason: reason, detailed: true),
+              BasePostComponent(
+                post: post,
+                reason: reason,
+                reply: reply,
+                detailed: true,
+              ),
             ],
           ),
         ),

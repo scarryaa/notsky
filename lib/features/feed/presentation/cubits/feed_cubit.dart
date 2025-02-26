@@ -68,7 +68,7 @@ class FeedCubit extends Cubit<FeedState> {
         cursor: cursor,
       );
     } else {
-      return await _blueskyService.getTimeline(limit: 25, cursor: cursor);
+      return await _blueskyService.getTimeline(limit: 50, cursor: cursor);
     }
   }
 }
