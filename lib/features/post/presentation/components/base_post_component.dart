@@ -12,21 +12,28 @@ class BasePostComponent extends StatelessWidget {
     this.reason,
     this.reply,
     this.detailed = false,
+    this.isReplyToMissingPost = false,
   });
 
   final PostContent postContent;
   final Reason? reason;
   final Reply? reply;
   final bool detailed;
+  final bool isReplyToMissingPost;
 
   @override
   Widget build(BuildContext context) {
     return switch (postContent) {
+      MissingPost() => NotFoundPostComponent(),
       RegularPost(post: final post) =>
         detailed
             ? DetailedPostComponent(post: post)
-            : PostComponent(post: post, reason: reason, reply: reply),
-      MissingPost() => NotFoundPostComponent(),
+            : PostComponent(
+              post: post,
+              reason: reason,
+              reply: reply,
+              isReplyToMissingPost: isReplyToMissingPost,
+            ),
     };
   }
 }

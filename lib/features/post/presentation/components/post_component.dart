@@ -14,11 +14,13 @@ class PostComponent extends StatefulWidget {
     required this.post,
     required this.reason,
     required this.reply,
+    required this.isReplyToMissingPost,
   });
 
   final Reason? reason;
   final Post post;
   final Reply? reply;
+  final bool isReplyToMissingPost;
 
   @override
   State<PostComponent> createState() => _PostComponentState();
@@ -86,6 +88,30 @@ class _PostComponentState extends State<PostComponent> {
                                 _buildIndexedAt(),
                               ],
                             ),
+                            if (widget.isReplyToMissingPost)
+                              Row(
+                                spacing: 2.0,
+                                children: [
+                                  Icon(
+                                    Icons.reply,
+                                    size: 12.5,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                  Text(
+                                    'Reply to a post',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             _buildPostContent(),
                             SizedBox(height: 4.0),
                             PostActionsComponent(

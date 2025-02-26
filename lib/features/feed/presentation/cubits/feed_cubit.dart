@@ -18,7 +18,6 @@ class FeedCubit extends Cubit<FeedState> {
       final Map<String, FeedView> uniqueFeedMap = {};
 
       for (final feedView in feeds.feed) {
-        print(feedView);
         final postUri = feedView.post.uri.toString();
         uniqueFeedMap[postUri] = feedView;
       }

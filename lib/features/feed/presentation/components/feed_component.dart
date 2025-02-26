@@ -224,6 +224,8 @@ class _FeedComponentState extends State<FeedComponent> {
                           postContent: RegularPost(feedItem.post),
                           reason: feedItem.reason,
                           reply: feedItem.reply,
+                          isReplyToMissingPost:
+                              feedItem.reply?.parent.data is NotFoundPost,
                         ),
                       ],
                     ),
