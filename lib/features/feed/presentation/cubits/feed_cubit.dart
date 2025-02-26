@@ -14,8 +14,26 @@ class FeedCubit extends Cubit<FeedState> {
 
     try {
       final Feed feeds = await _fetchFeed(generatorUri: generatorUri);
+
+      final Set<String> uniquePostUris = <String>{};
+      final List<FeedView> uniqueFeed = [];
+
+      for (final feedView in feeds.feed) {
+        final postUri = feedView.post.uri.toString();
+        if (!uniquePostUris.contains(postUri)) {
+          uniquePostUris.add(postUri);
+          uniqueFeed.add(feedView);
+        }
+      }
+
+      final Feed uniqueFeeds = Feed(feed: uniqueFeed, cursor: feeds.cursor);
+
       emit(
-        FeedLoaded(feeds, cursor: feeds.cursor, hasMore: feeds.feed.isNotEmpty),
+        FeedLoaded(
+          uniqueFeeds,
+          cursor: feeds.cursor,
+          hasMore: uniqueFeed.isNotEmpty,
+        ),
       );
     } catch (e) {
       emit(FeedError(e.toString()));
@@ -37,9 +55,23 @@ class FeedCubit extends Cubit<FeedState> {
         cursor: currentState.cursor,
       );
 
+      final Set<String> existingPostUris =
+          currentState.feeds.feed
+              .map((feedView) => feedView.post.uri.toString())
+              .toSet();
+
+      final List<FeedView> uniqueNewFeed =
+          newFeeds.feed
+              .where(
+                (feedView) =>
+                    !existingPostUris.contains(feedView.post.uri.toString()),
+              )
+              .toList();
+
+      // Combine with existing feed
       final List<FeedView> combinedFeed = [
         ...currentState.feeds.feed,
-        ...newFeeds.feed,
+        ...uniqueNewFeed,
       ];
 
       final Feed combinedFeeds = Feed(
@@ -52,7 +84,7 @@ class FeedCubit extends Cubit<FeedState> {
           combinedFeeds,
           isLoadingMore: false,
           cursor: newFeeds.cursor,
-          hasMore: newFeeds.feed.isNotEmpty,
+          hasMore: uniqueNewFeed.isNotEmpty,
         ),
       );
     } catch (e) {
