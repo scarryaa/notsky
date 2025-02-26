@@ -13,24 +13,27 @@ class FeedCubit extends Cubit<FeedState> {
     emit(FeedLoading());
 
     try {
+      final Set<String> seenRootUris = {};
+      final List<FeedView> dedupedFeed = [];
       final Feed feeds = await _fetchFeed(generatorUri: generatorUri);
 
-      final Map<String, FeedView> uniqueFeedMap = {};
-
-      for (final feedView in feeds.feed) {
-        final postUri = feedView.post.uri.toString();
-        uniqueFeedMap[postUri] = feedView;
+      for (final post in feeds.feed) {
+        if (post.post.record.reply != null &&
+            !seenRootUris.contains(
+              post.post.record.reply?.root.uri.toString(),
+            )) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+          dedupedFeed.add(post);
+        }
       }
 
-      final List<FeedView> uniqueFeed = uniqueFeedMap.values.toList();
-
-      final Feed uniqueFeeds = Feed(feed: uniqueFeed, cursor: feeds.cursor);
+      final Feed dedupedFeeds = Feed(feed: dedupedFeed, cursor: feeds.cursor);
 
       emit(
         FeedLoaded(
-          uniqueFeeds,
+          dedupedFeeds,
           cursor: feeds.cursor,
-          hasMore: uniqueFeed.isNotEmpty,
+          hasMore: feeds.feed.isNotEmpty,
         ),
       );
     } catch (e) {
@@ -48,22 +51,33 @@ class FeedCubit extends Cubit<FeedState> {
     emit(currentState.copyWith(isLoadingMore: true));
 
     try {
+      final Set<String> seenRootUris = {};
+      final List<FeedView> dedupedFeed = [];
       final Feed newFeeds = await _fetchFeed(
         generatorUri: generatorUri,
         cursor: currentState.cursor,
       );
 
-      final Map<String, FeedView> feedMap = {
-        for (var feedView in currentState.feeds.feed)
-          feedView.post.uri.toString(): feedView,
-      };
-
-      for (final feedView in newFeeds.feed) {
-        final postUri = feedView.post.uri.toString();
-        feedMap[postUri] = feedView;
+      for (final post in currentState.feeds.feed) {
+        if (post.post.record.reply != null) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+        }
       }
 
-      final List<FeedView> combinedFeed = feedMap.values.toList();
+      for (final post in newFeeds.feed) {
+        if (post.post.record.reply != null &&
+            !seenRootUris.contains(
+              post.post.record.reply?.root.uri.toString(),
+            )) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+          dedupedFeed.add(post);
+        }
+      }
+
+      final List<FeedView> combinedFeed = [
+        ...currentState.feeds.feed,
+        ...dedupedFeed,
+      ];
 
       final Feed combinedFeeds = Feed(
         feed: combinedFeed,
@@ -75,7 +89,7 @@ class FeedCubit extends Cubit<FeedState> {
           combinedFeeds,
           isLoadingMore: false,
           cursor: newFeeds.cursor,
-          hasMore: newFeeds.feed.isNotEmpty,
+          hasMore: dedupedFeed.isNotEmpty,
         ),
       );
     } catch (e) {

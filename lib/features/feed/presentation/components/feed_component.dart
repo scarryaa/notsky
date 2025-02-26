@@ -3,12 +3,12 @@ import 'package:bluesky/bluesky.dart' hide ListView;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
-import 'package:notsky/features/feed/presentation/components/dashed_line_painter.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_state.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/base_post_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
+import 'package:notsky/features/thread/presentation/components/thread_component.dart';
 
 class FeedComponent extends StatefulWidget {
   final bool isTimeline;
@@ -74,7 +74,7 @@ class _FeedComponentState extends State<FeedComponent> {
               child: ListView.separated(
                 controller: _scrollController,
                 itemBuilder: (context, index) {
-                  final feedItem = state.feeds.feed[index];
+                  final feedItem = state.feeds.feed.elementAtOrNull(index);
 
                   if (index == state.feeds.feed.length) {
                     return Center(
@@ -85,151 +85,29 @@ class _FeedComponentState extends State<FeedComponent> {
                     );
                   }
 
-                  return BlocProvider(
-                    create:
-                        (context) => PostCubit(
-                          context.read<AuthCubit>().getBlueskyService(),
-                        ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (feedItem.reply != null) ...[
-                          if (feedItem.reply!.parent.data is NotFoundPost)
-                            BasePostComponent(
-                              postContent: MissingPost(
-                                feedItem.reply!.root.data as NotFoundPost,
-                              ),
-                              reason: feedItem.reason,
-                              reply: feedItem.reply,
-                            )
-                          else if (feedItem.post.record.reply?.root.uri !=
-                              (feedItem.reply!.parent.data as Post).uri)
-                            Stack(
-                              children: [
-                                // Root post
-                                BasePostComponent(
-                                  postContent: RegularPost(
-                                    feedItem.reply!.root.data as Post,
-                                  ),
-                                  reason: feedItem.reason,
-                                  reply: feedItem.reply,
-                                ),
-                                if (feedItem.post.record.reply?.root.uri !=
-                                    (feedItem.reply?.parent.data as Post)
-                                        .record
-                                        .reply
-                                        ?.parent
-                                        .uri)
-                                  Positioned(
-                                    left: 27,
-                                    top: 56,
-                                    bottom: 0,
-                                    width: 2,
-                                    child: LayoutBuilder(
-                                      builder: (context, constraints) {
-                                        return CustomPaint(
-                                          size: Size(2, constraints.maxHeight),
-                                          painter: DashedLinePainter(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .outline
-                                                .withValues(alpha: 0.25),
-                                            dashLength: 4,
-                                            dashGap: 4,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  )
-                                else
-                                  Positioned(
-                                    left: 27,
-                                    top: 56,
-                                    bottom: 0,
-                                    width: 2,
-                                    child: Container(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline
-                                          .withValues(alpha: 0.25),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          if (feedItem.reply!.parent.data is NotFoundPost)
-                            // Handled above
-                            SizedBox.shrink()
-                          else if (feedItem.post.record.reply?.root.uri !=
-                              (feedItem.reply!.parent.data as Post).uri)
-                            if (feedItem.post.record.reply?.root.uri !=
-                                (feedItem.reply?.parent.data as Post)
-                                    .record
-                                    .reply
-                                    ?.parent
-                                    .uri)
-                              Row(
-                                children: [
-                                  SizedBox(width: 60.0),
-                                  GestureDetector(
-                                    onTap: () {
-                                      // TODO show full thread
-                                    },
-                                    child: Text(
-                                      'View full thread',
-                                      style: TextStyle(
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          // Parent post
-                          Stack(
-                            children: [
-                              if (feedItem.reply!.parent.data is NotFoundPost)
-                                BasePostComponent(
-                                  postContent: MissingPost(
-                                    feedItem.reply!.parent.data as NotFoundPost,
-                                  ),
-                                  reason: feedItem.reason,
-                                  reply: feedItem.reply,
-                                )
-                              else
-                                BasePostComponent(
-                                  postContent: RegularPost(
-                                    feedItem.reply!.parent.data as Post,
-                                  ),
-                                  reason: feedItem.reason,
-                                  reply: feedItem.reply,
-                                ),
-                              Positioned(
-                                left: 27,
-                                top: 56,
-                                bottom: 0,
-                                width: 2,
-                                child: Container(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.outline.withValues(alpha: 0.25),
-                                ),
-                              ),
-                            ],
+                  if (feedItem != null) {
+                    return BlocProvider(
+                      create:
+                          (context) => PostCubit(
+                            context.read<AuthCubit>().getBlueskyService(),
+                          ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ThreadComponent(feedItem: feedItem),
+                          // Reply post
+                          BasePostComponent(
+                            postContent: RegularPost(feedItem.post),
+                            reason: feedItem.reason,
+                            reply: feedItem.reply,
+                            isReplyToMissingPost:
+                                feedItem.reply?.parent.data is NotFoundPost,
                           ),
                         ],
-                        // Reply post
-                        BasePostComponent(
-                          postContent: RegularPost(feedItem.post),
-                          reason: feedItem.reason,
-                          reply: feedItem.reply,
-                          isReplyToMissingPost:
-                              feedItem.reply?.parent.data is NotFoundPost,
-                        ),
-                      ],
-                    ),
-                  );
+                      ),
+                    );
+                  }
+                  return null;
                 },
                 itemCount:
                     state.feeds.feed.length + (state.isLoadingMore ? 1 : 0),
