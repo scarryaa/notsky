@@ -13,15 +13,27 @@ class BlueskyServiceImpl implements BlueskyService {
     : _bluesky = Bluesky.fromSession(session);
 
   @override
-  Future<Feed> getTimeline({Map<String, String>? headers}) async {
+  Future<Feed> getTimeline({
+    Map<String, String>? headers,
+    String? cursor,
+    int? limit,
+  }) async {
     try {
-      return (await _bluesky.feed.getTimeline(headers: headers)).data;
+      return (await _bluesky.feed.getTimeline(
+        headers: headers,
+        cursor: cursor,
+        limit: limit,
+      )).data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
         final currentSession = _bluesky.session;
         if (currentSession != null) {
           await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          return (await _bluesky.feed.getTimeline(headers: headers)).data;
+          return (await _bluesky.feed.getTimeline(
+            headers: headers,
+            cursor: cursor,
+            limit: limit,
+          )).data;
         }
       }
       rethrow;
@@ -29,15 +41,46 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
-  Future<Feed> getFeed({required AtUri generatorUri}) async {
+  Future<Feed> getFeed({
+    required AtUri generatorUri,
+    String? cursor,
+    int? limit,
+  }) async {
     try {
-      return (await _bluesky.feed.getFeed(generatorUri: generatorUri)).data;
+      final Map<String, String> headers = {};
+
+      if (cursor != null) {
+        headers['cursor'] = cursor;
+      }
+
+      if (limit != null) {
+        headers['limit'] = limit.toString();
+      }
+
+      return (await _bluesky.feed.getFeed(
+        generatorUri: generatorUri,
+        headers: headers.isNotEmpty ? headers : null,
+      )).data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
         final currentSession = _bluesky.session;
         if (currentSession != null) {
           await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          return (await _bluesky.feed.getFeed(generatorUri: generatorUri)).data;
+
+          final Map<String, String> headers = {};
+
+          if (cursor != null) {
+            headers['cursor'] = cursor;
+          }
+
+          if (limit != null) {
+            headers['limit'] = limit.toString();
+          }
+
+          return (await _bluesky.feed.getFeed(
+            generatorUri: generatorUri,
+            headers: headers.isNotEmpty ? headers : null,
+          )).data;
         }
       }
       rethrow;

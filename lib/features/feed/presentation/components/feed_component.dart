@@ -7,7 +7,7 @@ import 'package:notsky/features/feed/presentation/cubits/feed_state.dart';
 import 'package:notsky/features/post/presentation/components/base_post_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 
-class FeedComponent extends StatelessWidget {
+class FeedComponent extends StatefulWidget {
   final bool isTimeline;
   final AtUri? generatorUri;
 
@@ -18,13 +18,50 @@ class FeedComponent extends StatelessWidget {
       );
 
   @override
+  State<FeedComponent> createState() => _FeedComponentState();
+}
+
+class _FeedComponentState extends State<FeedComponent> {
+  final ScrollController _scrollController = ScrollController();
+  late FeedCubit _feedCubit;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    const delta = 200.0;
+
+    if (maxScroll - currentScroll <= delta) {
+      _feedCubit.loadMoreFeed(
+        generatorUri: widget.isTimeline ? null : widget.generatorUri,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create:
-          (context) => FeedCubit(
-            context.read<AuthCubit>().state,
-            context.read<AuthCubit>(),
-          )..loadFeed(generatorUri: isTimeline ? null : generatorUri),
+      create: (context) {
+        _feedCubit = FeedCubit(context.read<AuthCubit>().getBlueskyService())
+          ..loadFeed(
+            generatorUri: widget.isTimeline ? null : widget.generatorUri,
+          );
+
+        _scrollController.addListener(_onScroll);
+
+        return _feedCubit;
+      },
       child: BlocBuilder<FeedCubit, FeedState>(
         builder: (context, state) {
           if (state is FeedLoading) {
@@ -32,7 +69,17 @@ class FeedComponent extends StatelessWidget {
           } else if (state is FeedLoaded) {
             return RefreshIndicator(
               child: ListView.separated(
+                controller: _scrollController,
                 itemBuilder: (context, index) {
+                  if (index == state.feeds.feed.length) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+
                   final feedItem = state.feeds.feed[index];
                   return BlocProvider(
                     create:
@@ -45,7 +92,8 @@ class FeedComponent extends StatelessWidget {
                     ),
                   );
                 },
-                itemCount: state.feeds.feed.length,
+                itemCount:
+                    state.feeds.feed.length + (state.isLoadingMore ? 1 : 0),
                 separatorBuilder:
                     (context, index) => Divider(
                       height: 1.0,
@@ -56,7 +104,7 @@ class FeedComponent extends StatelessWidget {
               ),
               onRefresh: () {
                 return context.read<FeedCubit>().loadFeed(
-                  generatorUri: isTimeline ? null : generatorUri,
+                  generatorUri: widget.isTimeline ? null : widget.generatorUri,
                 );
               },
             );
@@ -65,7 +113,7 @@ class FeedComponent extends StatelessWidget {
               child: Center(child: Text('Error: ${state.message}')),
               onRefresh: () {
                 return context.read<FeedCubit>().loadFeed(
-                  generatorUri: isTimeline ? null : generatorUri,
+                  generatorUri: widget.isTimeline ? null : widget.generatorUri,
                 );
               },
             );
@@ -73,7 +121,7 @@ class FeedComponent extends StatelessWidget {
           return RefreshIndicator(
             onRefresh: () {
               return context.read<FeedCubit>().loadFeed(
-                generatorUri: isTimeline ? null : generatorUri,
+                generatorUri: widget.isTimeline ? null : widget.generatorUri,
               );
             },
             child: Center(child: Text('No feed available')),
