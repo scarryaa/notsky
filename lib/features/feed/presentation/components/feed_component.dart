@@ -3,6 +3,7 @@ import 'package:bluesky/bluesky.dart' hide ListView;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/feed/presentation/components/dashed_line_painter.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_state.dart';
 import 'package:notsky/features/post/presentation/components/base_post_component.dart';
@@ -89,10 +90,43 @@ class _FeedComponentState extends State<FeedComponent> {
                         ),
                     child: Column(
                       children: [
-                        if (feedItem.reply != null)
+                        if (feedItem.reply != null) ...[
+                          if ((feedItem.reply!.root.data as Post).uri !=
+                              (feedItem.reply!.parent.data as Post).uri)
+                            Stack(
+                              children: [
+                                // Root post
+                                BasePostComponent(
+                                  post: feedItem.reply!.root.data as Post,
+                                  reason: feedItem.reason,
+                                  reply: feedItem.reply,
+                                ),
+                                Positioned(
+                                  left: 27,
+                                  top: 56,
+                                  bottom: 0,
+                                  width: 2,
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return CustomPaint(
+                                        size: Size(2, constraints.maxHeight),
+                                        painter: DashedLinePainter(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outline
+                                              .withValues(alpha: 0.25),
+                                          dashLength: 4,
+                                          dashGap: 4,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          // Parent post
                           Stack(
                             children: [
-                              // Parent post
                               BasePostComponent(
                                 post: feedItem.reply!.parent.data as Post,
                                 reason: feedItem.reason,
@@ -111,6 +145,7 @@ class _FeedComponentState extends State<FeedComponent> {
                               ),
                             ],
                           ),
+                        ],
                         // Reply post
                         BasePostComponent(
                           post: feedItem.post,
