@@ -9,6 +9,7 @@ import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class PostComponent extends StatefulWidget {
   const PostComponent({
@@ -252,9 +253,105 @@ class _PostComponentState extends State<PostComponent> {
               fontSize: 14.0,
             ),
           ),
+        _buildGifOrYoutubeVideo(),
         _buildVideo(),
         _buildImageGrid(),
       ],
+    );
+  }
+
+  Widget _buildGifOrYoutubeVideo() {
+    final record = widget.post.record;
+    if (record.embed == null || record.embed?.data is! EmbedExternal) {
+      return const SizedBox.shrink();
+    }
+    final embedExternal = record.embed!.data as EmbedExternal;
+    final url = embedExternal.external.uri;
+
+    if (url.contains('youtube.com') || url.contains('youtu.be')) {
+      final videoId = YoutubePlayer.convertUrlToId(url);
+      if (videoId != null) {
+        final controller = YoutubePlayerController(
+          initialVideoId: videoId,
+          flags: YoutubePlayerFlags(autoPlay: false),
+        );
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: YoutubePlayer(controller: controller),
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
+    double aspectRatio = 1.0;
+
+    final imageExtensions = [
+      '.jpg',
+      '.jpeg',
+      '.png',
+      '.gif',
+      '.bmp',
+      '.webp',
+      '.svg',
+    ];
+    final lowercaseUrl = url.toLowerCase();
+
+    if (!imageExtensions.any((ext) => lowercaseUrl.endsWith(ext))) {
+      return SizedBox.shrink();
+    }
+
+    try {
+      final uri = Uri.parse(url);
+      if (uri.queryParameters.containsKey('ww') &&
+          uri.queryParameters.containsKey('hh')) {
+        double width = double.tryParse(uri.queryParameters['ww']!) ?? 1.0;
+        double height = double.tryParse(uri.queryParameters['hh']!) ?? 1.0;
+        if (width > 0 && height > 0) {
+          aspectRatio = width / height;
+        }
+      }
+    } catch (e) {
+      print('Error parsing URL: $e');
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final height = maxWidth / aspectRatio;
+
+        return Padding(
+          padding: EdgeInsets.only(top: 4.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: Image.network(
+              url,
+              width: maxWidth,
+              height: height,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return SizedBox(
+                  width: maxWidth,
+                  height: height,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value:
+                          loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 

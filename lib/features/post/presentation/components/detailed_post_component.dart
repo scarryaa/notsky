@@ -137,6 +137,67 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
     );
   }
 
+  Widget _buildGif() {
+    final record = widget.post.record;
+    if (record.embed == null || record.embed?.data is! EmbedExternal) {
+      return const SizedBox.shrink();
+    }
+    final embedExternal = record.embed!.data as EmbedExternal;
+    final url = embedExternal.external.uri;
+
+    double aspectRatio = 1.0;
+
+    try {
+      final uri = Uri.parse(url);
+      if (uri.queryParameters.containsKey('ww') &&
+          uri.queryParameters.containsKey('hh')) {
+        double width = double.tryParse(uri.queryParameters['ww']!) ?? 1.0;
+        double height = double.tryParse(uri.queryParameters['hh']!) ?? 1.0;
+        if (width > 0 && height > 0) {
+          aspectRatio = width / height;
+        }
+      }
+    } catch (e) {
+      print('Error parsing URL: $e');
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final height = maxWidth / aspectRatio;
+
+        return Padding(
+          padding: EdgeInsets.only(top: 4.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: Image.network(
+              url,
+              width: maxWidth,
+              height: height,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return SizedBox(
+                  width: maxWidth,
+                  height: height,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value:
+                          loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildVideo() {
     final record = widget.post.record;
     if (record.embed == null ||
@@ -333,6 +394,7 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
             fontSize: 14.0,
           ),
         ),
+        _buildGif(),
         _buildVideo(),
         _buildImageGrid(),
       ],
