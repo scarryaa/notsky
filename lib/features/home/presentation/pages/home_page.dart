@@ -13,14 +13,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late TabController _tabController;
+  final timelineKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-
     _tabController = TabController(length: 1, vsync: this);
-
-    context.read<FeedListCubit>().loadFeeds();
   }
 
   @override
@@ -35,8 +33,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void _updateTabController(int length) {
     if (_tabController.length != length) {
+      final previousIndex = _tabController.index;
       _tabController.dispose();
       _tabController = TabController(length: length, vsync: this);
+
+      if (previousIndex < length) {
+        _tabController.index = previousIndex;
+      }
     }
   }
 
@@ -53,6 +56,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         if (state is FeedListLoaded && state.feeds.feeds.isNotEmpty) {
           _updateTabController(state.feeds.feeds.length + 1);
         }
+
+        final timelineComponent = FeedComponent(
+          key: timelineKey,
+          isTimeline: true,
+        );
 
         return Scaffold(
           drawer: _buildDrawer(context),
@@ -111,13 +119,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ? TabBarView(
                     controller: _tabController,
                     children: [
-                      FeedComponent(isTimeline: true),
+                      timelineComponent,
                       ...state.feeds.feeds.map(
                         (feed) => FeedComponent(generatorUri: feed.uri),
                       ),
                     ],
                   )
-                  : FeedComponent(isTimeline: true),
+                  : timelineComponent,
         );
       },
     );
