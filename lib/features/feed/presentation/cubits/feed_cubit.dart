@@ -74,6 +74,9 @@ class FeedCubit extends Cubit<FeedState> {
             )) {
           seenRootUris.add(post.post.record.reply!.root.uri.toString());
           dedupedFeed.add(post);
+        } else if (post.post.record.reply == null) {
+          seenRootUris.add(post.post.uri.toString());
+          dedupedFeed.add(post);
         }
       }
 
