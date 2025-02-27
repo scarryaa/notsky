@@ -196,25 +196,36 @@ class _PostComponentState extends State<PostComponent> {
   }
 
   Widget _buildReasonRepost(Reason? reason) {
+    if (widget.reason == null || widget.reason?.data is! ReasonRepost) {
+      return SizedBox.shrink();
+    }
+
+    final repostReason = widget.reason?.data as ReasonRepost;
+
     return Row(
       children: [
-        if (widget.reason != null && widget.reason?.data is ReasonRepost)
-          GestureDetector(
+        Expanded(
+          child: GestureDetector(
             onTap: () {
               // TODO go to actor profile
             },
             child: Row(
-              spacing: 4.0,
               children: [
-                SizedBox(width: 28.0),
+                SizedBox(width: 32.0),
                 Icon(Icons.repeat, size: 12.0),
-                Text(
-                  'Reposted by ${(reason?.data as ReasonRepost).by.displayName}',
-                  style: TextStyle(fontSize: 12.0),
+                SizedBox(width: 4.0),
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Text(
+                    'Reposted by ${repostReason.by.displayName}',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12.0),
+                  ),
                 ),
               ],
             ),
           ),
+        ),
       ],
     );
   }
