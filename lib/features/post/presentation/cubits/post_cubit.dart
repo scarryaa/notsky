@@ -25,22 +25,16 @@ class PostCubit extends Cubit<PostState> {
   ) {
     _postUri = postUri;
 
-    // Check if we already have state for this post
-    final existingState = _stateManager.getPostState(postUri);
-    if (existingState != null) {
-      emit(existingState);
-    } else {
-      final newState = PostState(
-        isLiked: isLiked,
-        likeUri: likeUri,
-        isReposted: isReposted,
-        repostUri: repostUri,
-        likeCount: likeCount,
-        repostCount: repostCount,
-      );
-      emit(newState);
-      _stateManager.updatePostState(postUri, newState);
-    }
+    final newState = PostState(
+      isLiked: isLiked,
+      likeUri: likeUri,
+      isReposted: isReposted,
+      repostUri: repostUri,
+      likeCount: likeCount,
+      repostCount: repostCount,
+    );
+    emit(newState);
+    _stateManager.updatePostState(postUri, newState);
 
     // Listen for updates to this post
     _subscription = _stateManager.postUpdates.listen((updatedUri) {
