@@ -181,7 +181,7 @@ class ThreadComponent extends StatelessWidget {
             else
               BasePostComponent(
                 postContent: RegularPost(feedItem.reply!.parent.data as Post),
-                reason: feedItem.reason,
+                reason: null,
                 reply: feedItem.reply,
               ),
             Positioned(
