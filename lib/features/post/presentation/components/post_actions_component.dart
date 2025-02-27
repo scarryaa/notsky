@@ -112,10 +112,10 @@ class PostActionsComponent extends StatelessWidget {
             SizedBox(
               width: 30,
               child: Transform.translate(
-                offset: isFirst ? Offset(-5, 0) : Offset.zero,
+                offset: isFirst ? Offset(-5, -1) : Offset(0, -1),
                 child: Text(
                   metric > 0 ? _formatCount(metric) : '',
-                  textAlign: TextAlign.start,
+                  textAlign: TextAlign.left,
                   style: TextStyle(
                     fontSize: iconSize - 6.0,
                     fontWeight:

@@ -17,6 +17,8 @@ abstract class BlueskyService {
     int? limit,
   });
 
+  Future<FeedGenerators> getFeeds();
+
   Future<PostActionResult> like(String cid, AtUri uri);
   Future<PostActionResult> deleteRecord(AtUri uri);
   Future<PostActionResult> reply(String cid, AtUri uri);

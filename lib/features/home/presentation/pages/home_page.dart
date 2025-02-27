@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/feed/presentation/components/feed_component.dart';
+import 'package:notsky/features/home/presentation/cubits/feed_list_cubit.dart';
+import 'package:notsky/features/home/presentation/cubits/feed_list_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -9,45 +12,114 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  late final TabController _tabController;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(length: 1, vsync: this);
+
+    context.read<FeedListCubit>().loadFeeds();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final state = context.watch<FeedListCubit>().state;
+    if (state is FeedListLoaded && state.feeds.feeds.isNotEmpty) {
+      _updateTabController(state.feeds.feeds.length + 1);
+    }
+  }
+
+  void _updateTabController(int length) {
+    if (_tabController.length != length) {
+      _tabController.dispose();
+      _tabController = TabController(length: length, vsync: this);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: _buildDrawer(context),
-      appBar: PreferredSize(
-        preferredSize: Size(double.infinity, 90.0),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.25),
+    return BlocBuilder<FeedListCubit, FeedListState>(
+      builder: (context, state) {
+        if (state is FeedListLoaded && state.feeds.feeds.isNotEmpty) {
+          _updateTabController(state.feeds.feeds.length + 1);
+        }
+
+        return Scaffold(
+          drawer: _buildDrawer(context),
+          appBar: PreferredSize(
+            preferredSize: Size(double.infinity, 90.0),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.25),
+                  ),
+                ),
+              ),
+              child: AppBar(
+                title: Text('Home'),
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                scrolledUnderElevation: 0,
+                bottom: PreferredSize(
+                  preferredSize: Size(double.infinity, 20.0),
+                  child: Builder(
+                    builder: (context) {
+                      if (state is FeedListLoaded &&
+                          state.feeds.feeds.isNotEmpty) {
+                        return TabBar(
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          tabs: [
+                            Tab(text: 'Following', height: 32),
+                            ...state.feeds.feeds.map(
+                              (feed) => Tab(height: 32, text: feed.displayName),
+                            ),
+                          ],
+                          controller: _tabController,
+                        );
+                      }
+
+                      if (state is FeedListLoading) {
+                        return Container();
+                      } else if (state is FeedListError) {
+                        return Text(
+                          'An error occurred while loading feeds. ${state.message}',
+                        );
+                      } else {
+                        return Container();
+                      }
+                    },
+                  ),
+                ),
               ),
             ),
           ),
-          child: AppBar(
-            title: Text('Home'),
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            scrolledUnderElevation: 0,
-            bottom: PreferredSize(
-              preferredSize: Size(double.infinity, 20.0),
-              child: TabBar(
-                tabs: [Tab(text: 'Following', height: 32.0)],
-                controller: _tabController,
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: FeedComponent(isTimeline: true),
+          body:
+              state is FeedListLoaded && state.feeds.feeds.isNotEmpty
+                  ? TabBarView(
+                    controller: _tabController,
+                    children: [
+                      FeedComponent(isTimeline: true),
+                      ...state.feeds.feeds.map(
+                        (feed) => FeedComponent(generatorUri: feed.uri),
+                      ),
+                    ],
+                  )
+                  : FeedComponent(isTimeline: true),
+        );
+      },
     );
   }
 

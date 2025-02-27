@@ -23,4 +23,14 @@ class BlueskyFeedRepository implements FeedRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<FeedGenerators> getFeeds() async {
+    try {
+      final feeds = await _blueskyService.getFeeds();
+      return feeds;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

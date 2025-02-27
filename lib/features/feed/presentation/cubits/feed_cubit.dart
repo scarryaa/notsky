@@ -40,9 +40,7 @@ class FeedCubit extends Cubit<FeedState> {
           hasMore: feeds.feed.isNotEmpty,
         ),
       );
-    } catch (e) {
-      emit(FeedError(e.toString()));
-    }
+    } catch (e) {}
   }
 
   Future<void> loadMoreFeed({AtUri? generatorUri}) async {

@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/auth/presentation/pages/login_page.dart';
+import 'package:notsky/features/feed/data/providers/feed_repository_provider.dart';
+import 'package:notsky/features/home/presentation/cubits/feed_list_cubit.dart';
 import 'package:notsky/shared/components/base_scaffold.dart';
 
 void main() {
@@ -15,8 +17,10 @@ class NotSkyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AuthCubit()..checkAuthStatus(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => AuthCubit()..checkAuthStatus()),
+      ],
       child: MaterialApp(
         title: 'notsky',
         debugShowCheckedModeBanner: false,
@@ -68,14 +72,39 @@ class NotSkyApp extends StatelessWidget {
         home: BlocBuilder<AuthCubit, AuthState>(
           builder: (context, state) {
             if (state is AuthSuccess) {
-              return const BaseScaffold();
+              return BlocProvider(
+                create:
+                    (context) => FeedListCubit(
+                      feedRepository:
+                          FeedRepositoryProvider.provideFeedRepository(
+                            state,
+                            context.read<AuthCubit>(),
+                          ),
+                    )..loadFeeds(),
+                child: const BaseScaffold(),
+              );
             }
             return const LoginPage();
           },
         ),
         routes: {
           '/login': (context) => const LoginPage(),
-          '/home': (context) => BaseScaffold(),
+          '/home':
+              (context) => BlocBuilder<AuthCubit, AuthState>(
+                builder: (context, state) {
+                  return BlocProvider(
+                    create:
+                        (context) => FeedListCubit(
+                          feedRepository:
+                              FeedRepositoryProvider.provideFeedRepository(
+                                state,
+                                context.read<AuthCubit>(),
+                              ),
+                        )..loadFeeds(),
+                    child: const BaseScaffold(),
+                  );
+                },
+              ),
         },
       ),
     );

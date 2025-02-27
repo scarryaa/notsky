@@ -104,6 +104,51 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
+  Future<FeedGenerators> getFeeds() async {
+    try {
+      final preferences = await getPreferences();
+
+      final savedFeedUris =
+          preferences.preferences
+              .where((pref) => pref.data is SavedFeedsPrefV2)
+              .map((pref) => pref.data as SavedFeedsPrefV2)
+              .expand(
+                (savedFeedsPref) =>
+                    savedFeedsPref.items.map((feed) => AtUri(feed.value)),
+              )
+              // Skip following feed
+              .skip(1)
+              .toList();
+
+      return (await _bluesky.feed.getFeedGenerators(uris: savedFeedUris)).data;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+
+          final preferences = await getPreferences();
+
+          final savedFeedUris =
+              preferences.preferences
+                  .where((pref) => pref.data is SavedFeedsPrefV2)
+                  .map((pref) => pref.data as SavedFeedsPrefV2)
+                  .expand(
+                    (savedFeedsPref) =>
+                        savedFeedsPref.items.map((feed) => AtUri(feed.value)),
+                  )
+                  .toList();
+
+          return (await _bluesky.feed.getFeedGenerators(
+            uris: savedFeedUris,
+          )).data;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<PostActionResult> like(String cid, AtUri uri) async {
     try {
       final result = await _bluesky.feed.like(cid: cid, uri: uri);
