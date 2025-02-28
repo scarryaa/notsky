@@ -8,10 +8,37 @@ class AvatarComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return (avatar != null && avatar!.isNotEmpty)
-        ? ClipOval(
-          child: Image.network(avatar ?? '', width: size, height: size),
-        )
-        : Icon(Icons.account_circle_rounded, size: size);
+    if (avatar == null || avatar!.isEmpty) {
+      return _buildDefaultAvatar();
+    }
+
+    return ClipOval(
+      child: Image.network(
+        avatar!,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: size,
+            height: size,
+            color: Colors.grey[300],
+            child: Center(child: Container()),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildDefaultAvatar();
+        },
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar() {
+    return Icon(
+      Icons.account_circle_rounded,
+      size: size,
+      color: Colors.grey[600],
+    );
   }
 }

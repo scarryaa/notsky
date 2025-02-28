@@ -71,19 +71,32 @@ class ClickableImageGrid extends StatelessWidget {
   }
 
   Widget _buildNetworkImage(String imageUrl) {
-    return Image.network(
-      imageUrl,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(child: CircularProgressIndicator());
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey[300],
-          child: Icon(Icons.broken_image, color: Colors.grey[600]),
-        );
-      },
+    try {
+      if (imageUrl.isEmpty) {
+        return _buildErrorPlaceholder();
+      }
+
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(child: CircularProgressIndicator());
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildErrorPlaceholder();
+        },
+      );
+    } catch (e) {
+      print('Error loading image: $e');
+      return _buildErrorPlaceholder();
+    }
+  }
+
+  Widget _buildErrorPlaceholder() {
+    return Container(
+      color: Colors.grey[300],
+      child: Icon(Icons.broken_image, color: Colors.grey[600]),
     );
   }
 }
