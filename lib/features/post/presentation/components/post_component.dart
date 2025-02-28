@@ -1,8 +1,11 @@
 import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/post/presentation/components/avatar_component.dart';
 import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
+import 'package:notsky/features/post/presentation/components/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/shared_post_methods.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
@@ -125,7 +128,6 @@ class _PostComponentState extends State<PostComponent> {
                                       widget.post.quoteCount),
                               repostedByViewer: state.isReposted,
                               likedByViewer: state.isLiked,
-                              // TODO post actions
                               onLike: () async {
                                 final newLikeCount =
                                     (state.likeCount ?? widget.post.likeCount) +
@@ -140,8 +142,79 @@ class _PostComponentState extends State<PostComponent> {
                                   newLikeCount,
                                 );
                               },
-                              onReply: () {},
-                              onMore: () {},
+                              onReply: () {
+                                String? avatar;
+                                final authState =
+                                    context.read<AuthCubit>().state;
+                                if (authState is AuthSuccess) {
+                                  final profile = authState.profile;
+                                  avatar = profile?.avatar;
+                                }
+
+                                showModalBottomSheet(
+                                  isScrollControlled: true,
+                                  constraints: BoxConstraints(
+                                    minHeight:
+                                        MediaQuery.of(context).size.height -
+                                        250,
+                                    maxHeight:
+                                        MediaQuery.of(context).size.height -
+                                        250,
+                                  ),
+                                  context: context,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(12.0),
+                                    ),
+                                  ),
+                                  builder:
+                                      (context) => ReplyComponent(
+                                        onCancel: () {
+                                          Navigator.pop(context);
+                                        },
+                                        onReply: (String text) {
+                                          final auth =
+                                              context.read<AuthCubit>();
+                                          final blueskyService =
+                                              auth.getBlueskyService();
+
+                                          blueskyService.reply(
+                                            text,
+                                            rootCid:
+                                                widget
+                                                    .post
+                                                    .record
+                                                    .reply
+                                                    ?.root
+                                                    .cid ??
+                                                widget.post.cid,
+                                            rootUri:
+                                                widget
+                                                    .post
+                                                    .record
+                                                    .reply
+                                                    ?.root
+                                                    .uri ??
+                                                widget.post.uri,
+                                            parentCid: widget.post.cid,
+                                            parentUri: widget.post.uri,
+                                          );
+                                          Navigator.of(context).pop();
+                                        },
+                                        replyPost: widget.post,
+                                        userAvatar: avatar,
+                                      ),
+                                );
+                              },
+                              onMore: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  builder:
+                                      (context) => Container(
+                                        // TODO
+                                      ),
+                                );
+                              },
                               onRepost: () async {
                                 final currentRepostCount =
                                     state.repostCount ??

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/feed/presentation/components/feed_component.dart';
 import 'package:notsky/features/home/presentation/cubits/feed_list_cubit.dart';
 import 'package:notsky/features/home/presentation/cubits/feed_list_state.dart';
+import 'package:notsky/features/post/presentation/components/reply_component.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -126,6 +129,56 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ],
                   )
                   : timelineComponent,
+          floatingActionButton: IconButton(
+            constraints: BoxConstraints(minWidth: 48.0, minHeight: 48.0),
+            onPressed: () {
+              showModalBottomSheet(
+                isScrollControlled: true,
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height - 250,
+                  maxHeight: MediaQuery.of(context).size.height - 250,
+                ),
+                context: context,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(12.0),
+                  ),
+                ),
+                builder: (context) {
+                  String? avatar;
+                  final authState = context.read<AuthCubit>().state;
+                  if (authState is AuthSuccess) {
+                    final profile = authState.profile;
+                    avatar = profile?.avatar;
+                  }
+
+                  return ReplyComponent(
+                    onCancel: () {
+                      Navigator.pop(context);
+                    },
+                    onReply: (String text) {
+                      final auth = context.read<AuthCubit>();
+                      final blueskyService = auth.getBlueskyService();
+
+                      blueskyService.post(text);
+                      Navigator.of(context).pop();
+                    },
+                    replyPost: null,
+                    userAvatar: avatar,
+                  );
+                },
+              );
+            },
+            style: ButtonStyle(
+              backgroundColor: WidgetStatePropertyAll(
+                Theme.of(context).colorScheme.primary,
+              ),
+              foregroundColor: WidgetStatePropertyAll(
+                Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+            icon: Icon(Icons.edit_square, size: 22.0),
+          ),
         );
       },
     );

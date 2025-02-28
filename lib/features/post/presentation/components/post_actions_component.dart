@@ -37,7 +37,7 @@ class PostActionsComponent extends StatelessWidget {
       children: [
         _buildActionButton(
           context,
-          onPressed: () {},
+          onPressed: onReply,
           icon: Icons.chat_bubble_outline,
           metric: replyCount,
           iconAlignment: Alignment.centerLeft,
@@ -69,7 +69,7 @@ class PostActionsComponent extends StatelessWidget {
         ),
         _buildActionButton(
           context,
-          onPressed: () {},
+          onPressed: onMore,
           icon: Icons.more_horiz,
           iconAlignment: Alignment.centerRight,
           mainAxisAlignment: MainAxisAlignment.end,

@@ -29,7 +29,10 @@ class AuthCubit extends Cubit<AuthState> {
       );
 
       await _saveSession(session.data);
-      emit(AuthSuccess(session.data));
+
+      emit(AuthSuccess(session.data, profile: null));
+      final profile = await getBlueskyService().getProfile(session.data.did);
+      emit(AuthSuccess(session.data, profile: profile));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -65,6 +68,11 @@ class AuthCubit extends Cubit<AuthState> {
         final bluesky = Bluesky.fromSession(savedSession);
         if (bluesky.session!.active) {
           emit(AuthSuccess(savedSession));
+
+          final profile = await getBlueskyService().getProfile(
+            savedSession.did,
+          );
+          emit(AuthSuccess(savedSession, profile: profile));
         } else {
           await _clearSession();
           emit(AuthInitial());

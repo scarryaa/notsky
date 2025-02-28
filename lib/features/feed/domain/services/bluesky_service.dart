@@ -11,6 +11,8 @@ abstract class BlueskyService {
 
   Future<Preferences> getPreferences();
 
+  Future<ActorProfile> getProfile(String did);
+
   Future<Feed> getFeed({
     required AtUri generatorUri,
     String? cursor,
@@ -21,7 +23,14 @@ abstract class BlueskyService {
 
   Future<PostActionResult> like(String cid, AtUri uri);
   Future<PostActionResult> deleteRecord(AtUri uri);
-  Future<PostActionResult> reply(String cid, AtUri uri);
+  Future<PostActionResult> post(String text);
+  Future<PostActionResult> reply(
+    String text, {
+    required String rootCid,
+    required AtUri rootUri,
+    required String parentCid,
+    required AtUri parentUri,
+  });
   Future<PostActionResult> repost(String cid, AtUri uri);
   Future<PostActionResult> quote(String cid, AtUri uri);
 }

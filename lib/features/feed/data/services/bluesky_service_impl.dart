@@ -1,4 +1,5 @@
 import 'package:atproto_core/atproto_core.dart';
+import 'package:bluesky/atproto.dart';
 import 'package:bluesky/bluesky.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/feed/domain/services/bluesky_service.dart';
@@ -104,6 +105,24 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
+  Future<ActorProfile> getProfile(String did) async {
+    try {
+      final profile = await _bluesky.actor.getProfile(actor: did);
+      return profile.data;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+          final profile = await _bluesky.actor.getProfile(actor: did);
+          return profile.data;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<FeedGenerators> getFeeds() async {
     try {
       final preferences = await getPreferences();
@@ -173,9 +192,51 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
-  Future<PostActionResult> reply(String cid, AtUri uri) {
-    // TODO: implement reply
-    throw UnimplementedError();
+  Future<PostActionResult> post(String text) async {
+    try {
+      final result = await _bluesky.feed.post(text: text);
+      return PostActionResult(success: true, uri: result.data.uri);
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+          final result = await _bluesky.feed.post(text: text);
+          return PostActionResult(success: true, uri: result.data.uri);
+        }
+      }
+      return PostActionResult(error: e.toString());
+    }
+  }
+
+  @override
+  Future<PostActionResult> reply(
+    String text, {
+    required String rootCid,
+    required AtUri rootUri,
+    required String parentCid,
+    required AtUri parentUri,
+  }) async {
+    try {
+      final result = await _bluesky.feed.post(
+        text: text,
+        reply: ReplyRef(
+          root: StrongRef(cid: rootCid, uri: rootUri),
+          parent: StrongRef(cid: parentCid, uri: parentUri),
+        ),
+      );
+      return PostActionResult(success: true, uri: result.data.uri);
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+          final result = await _bluesky.feed.post(text: text);
+          return PostActionResult(success: true, uri: result.data.uri);
+        }
+      }
+      return PostActionResult(error: e.toString());
+    }
   }
 
   @override

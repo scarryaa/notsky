@@ -102,11 +102,14 @@ class SharedPostMethods {
           flags: YoutubePlayerFlags(autoPlay: false),
         );
 
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: YoutubePlayer(controller: controller),
+        return Padding(
+          padding: EdgeInsets.only(top: 8.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: YoutubePlayer(controller: controller),
+            ),
           ),
         );
       }
