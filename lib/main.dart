@@ -7,6 +7,8 @@ import 'package:notsky/features/feed/data/providers/feed_repository_provider.dar
 import 'package:notsky/features/home/presentation/cubits/feed_list_cubit.dart';
 import 'package:notsky/shared/components/base_scaffold.dart';
 
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const NotSkyApp());
@@ -40,6 +42,7 @@ class NotSkyApp extends StatelessWidget {
         child: MaterialApp(
           title: 'notsky',
           debugShowCheckedModeBanner: false,
+          navigatorObservers: [routeObserver],
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
               seedColor: Colors.deepPurple,

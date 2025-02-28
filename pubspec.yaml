@@ -21,6 +21,7 @@ dependencies:
   intl: ^0.20.2
   video_player: ^2.9.3
   youtube_player_flutter: ^9.1.1
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:

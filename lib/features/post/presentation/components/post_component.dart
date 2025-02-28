@@ -4,13 +4,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/post/presentation/components/avatar_component.dart';
+import 'package:notsky/features/post/presentation/components/clickable_image_grid.dart';
+import 'package:notsky/features/post/presentation/components/image_detail_screen.dart';
 import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
 import 'package:notsky/features/post/presentation/components/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/shared_post_methods.dart';
+import 'package:notsky/features/post/presentation/controllers/bottom_nav_visibility_controller.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
+import 'package:provider/provider.dart';
 
 class PostComponent extends StatefulWidget {
   const PostComponent({
@@ -492,74 +496,28 @@ class _PostComponentState extends State<PostComponent> {
     final imageEmbed = embed.data as EmbedViewImages;
     final images = imageEmbed.images;
 
-    if (images.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    return ClickableImageGrid(
+      images: images,
+      onImageTap: (image, index) {
+        final navController = Provider.of<BottomNavVisibilityController>(
+          context,
+          listen: false,
+        );
+        navController.hide();
 
-    if (images.length == 1) {
-      final image = images[0];
-      final aspectRatio =
-          image.aspectRatio != null
-              ? image.aspectRatio!.width / image.aspectRatio!.height
-              : 1.0;
-
-      return Padding(
-        padding: const EdgeInsets.only(top: 8.0),
-        child: AspectRatio(
-          aspectRatio: aspectRatio,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: Image.network(
-              image.fullsize,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(child: CircularProgressIndicator());
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.grey[300],
-                  child: Icon(Icons.broken_image, color: Colors.grey[600]),
-                );
-              },
-            ),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder:
+                (context) => ImageDetailScreen(
+                  images: images,
+                  initialIndex: index,
+                  onExit: () {
+                    navController.show();
+                  },
+                ),
           ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: images.length <= 2 ? images.length : 2,
-          childAspectRatio: 1.0,
-          crossAxisSpacing: 4.0,
-          mainAxisSpacing: 4.0,
-        ),
-        itemCount: images.length,
-        itemBuilder: (context, index) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: Image.network(
-              images[index].fullsize,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(child: CircularProgressIndicator());
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.grey[300],
-                  child: Icon(Icons.broken_image, color: Colors.grey[600]),
-                );
-              },
-            ),
-          );
-        },
-      ),
+        );
+      },
     );
   }
 

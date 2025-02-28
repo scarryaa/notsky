@@ -7,11 +7,15 @@ import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/avatar_component.dart';
 import 'package:notsky/features/post/presentation/components/base_post_component.dart';
+import 'package:notsky/features/post/presentation/components/clickable_image_grid.dart';
+import 'package:notsky/features/post/presentation/components/image_detail_screen.dart';
 import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
 import 'package:notsky/features/post/presentation/components/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/shared_post_methods.dart';
+import 'package:notsky/features/post/presentation/controllers/bottom_nav_visibility_controller.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
+import 'package:provider/provider.dart';
 
 class DetailedPostComponent extends StatefulWidget {
   const DetailedPostComponent({
@@ -79,14 +83,16 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
                             avatar: widget.post.author.avatar,
                             size: 40.0,
                           ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildDisplayName(),
-                              _buildHandle(context),
-                              SizedBox(height: 2.0),
-                            ],
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildDisplayName(),
+                                _buildHandle(context),
+                                SizedBox(height: 2.0),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -433,74 +439,27 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
     final imageEmbed = embed.data as EmbedViewImages;
     final images = imageEmbed.images;
 
-    if (images.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    if (images.length == 1) {
-      final image = images[0];
-      final aspectRatio =
-          image.aspectRatio != null
-              ? image.aspectRatio!.width / image.aspectRatio!.height
-              : 1.0;
-
-      return Padding(
-        padding: const EdgeInsets.only(top: 8.0),
-        child: AspectRatio(
-          aspectRatio: aspectRatio,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: Image.network(
-              image.fullsize,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(child: CircularProgressIndicator());
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.grey[300],
-                  child: Icon(Icons.broken_image, color: Colors.grey[600]),
-                );
-              },
-            ),
+    return ClickableImageGrid(
+      images: images,
+      onImageTap: (image, index) {
+        final navController = Provider.of<BottomNavVisibilityController>(
+          context,
+          listen: false,
+        );
+        navController.hide();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder:
+                (context) => ImageDetailScreen(
+                  images: images,
+                  initialIndex: index,
+                  onExit: () {
+                    navController.show();
+                  },
+                ),
           ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: images.length <= 2 ? images.length : 2,
-          childAspectRatio: 1.0,
-          crossAxisSpacing: 4.0,
-          mainAxisSpacing: 4.0,
-        ),
-        itemCount: images.length,
-        itemBuilder: (context, index) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: Image.network(
-              images[index].fullsize,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(child: CircularProgressIndicator());
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.grey[300],
-                  child: Icon(Icons.broken_image, color: Colors.grey[600]),
-                );
-              },
-            ),
-          );
-        },
-      ),
+        );
+      },
     );
   }
 
