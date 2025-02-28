@@ -20,6 +20,7 @@ abstract class BlueskyService {
   });
 
   Future<FeedGenerators> getFeeds();
+  Future<List<ContentLabelPreference>> getContentPreferences();
 
   Future<PostActionResult> like(String cid, AtUri uri);
   Future<PostActionResult> deleteRecord(AtUri uri);

@@ -6,8 +6,13 @@ import 'package:notsky/features/post/presentation/components/base_post_component
 
 class ThreadComponent extends StatelessWidget {
   final FeedView feedItem;
+  final List<ContentLabelPreference> contentLabelPreferences;
 
-  const ThreadComponent({super.key, required this.feedItem});
+  const ThreadComponent({
+    super.key,
+    required this.feedItem,
+    required this.contentLabelPreferences,
+  });
 
   Widget _buildDeletedPostComponent(BuildContext context) {
     return Container(
@@ -94,6 +99,7 @@ class ThreadComponent extends StatelessWidget {
             postContent: MissingPost(feedItem.reply!.root.data as NotFoundPost),
             reason: feedItem.reason,
             reply: feedItem.reply,
+            contentLabelPreferences: contentLabelPreferences,
           )
         else if (feedItem.post.record.reply?.root.uri !=
             (feedItem.reply!.parent.data as Post).uri)
@@ -105,6 +111,7 @@ class ThreadComponent extends StatelessWidget {
                   postContent: RegularPost(feedItem.reply!.root.data as Post),
                   reason: feedItem.reason,
                   reply: feedItem.reply,
+                  contentLabelPreferences: contentLabelPreferences,
                 )
               else if (feedItem.reply!.root.data is NotFoundPost)
                 _buildDeletedPostComponent(context),
@@ -177,12 +184,14 @@ class ThreadComponent extends StatelessWidget {
                 ),
                 reason: feedItem.reason,
                 reply: feedItem.reply,
+                contentLabelPreferences: contentLabelPreferences,
               )
             else
               BasePostComponent(
                 postContent: RegularPost(feedItem.reply!.parent.data as Post),
                 reason: null,
                 reply: feedItem.reply,
+                contentLabelPreferences: contentLabelPreferences,
               ),
             Positioned(
               left: 27,

@@ -153,6 +153,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   }
 
                   return ReplyComponent(
+                    hideOrWarn: null,
                     onCancel: () {
                       Navigator.pop(context);
                     },

@@ -94,7 +94,13 @@ class _FeedComponentState extends State<FeedComponent> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ThreadComponent(feedItem: feedItem),
+                          ThreadComponent(
+                            feedItem: feedItem,
+                            contentLabelPreferences:
+                                context
+                                    .read<FeedCubit>()
+                                    .contentLabelPreferences,
+                          ),
                           // Reply post
                           BasePostComponent(
                             postContent: RegularPost(feedItem.post),
@@ -102,6 +108,10 @@ class _FeedComponentState extends State<FeedComponent> {
                             reply: feedItem.reply,
                             isReplyToMissingPost:
                                 feedItem.reply?.parent.data is NotFoundPost,
+                            contentLabelPreferences:
+                                context
+                                    .read<FeedCubit>()
+                                    .contentLabelPreferences,
                           ),
                         ],
                       ),

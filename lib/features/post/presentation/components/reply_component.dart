@@ -8,12 +8,14 @@ class ReplyComponent extends StatefulWidget {
     super.key,
     required this.replyPost,
     required this.userAvatar,
+    required this.hideOrWarn,
     this.onCancel,
     this.onReply,
   });
 
   final Post? replyPost;
   final String? userAvatar;
+  final bool? hideOrWarn;
   final void Function()? onCancel;
   final void Function(String)? onReply;
 
@@ -217,7 +219,7 @@ class _ReplyComponentState extends State<ReplyComponent> {
               ],
             ),
           ),
-          _buildImagePreview(context),
+          if (!widget.hideOrWarn!) _buildImagePreview(context),
         ],
       ),
     );

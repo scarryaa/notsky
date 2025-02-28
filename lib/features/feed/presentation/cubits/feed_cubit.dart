@@ -6,13 +6,25 @@ import 'package:notsky/features/feed/presentation/cubits/feed_state.dart';
 
 class FeedCubit extends Cubit<FeedState> {
   final BlueskyService _blueskyService;
+  List<ContentLabelPreference> _contentLabelPreferences = [];
 
   FeedCubit(this._blueskyService) : super(FeedInitial());
+
+  List<ContentLabelPreference> get contentLabelPreferences =>
+      _contentLabelPreferences;
+
+  Future<void> loadContentLabelPreferences() async {
+    try {
+      _contentLabelPreferences = await _blueskyService.getContentPreferences();
+    } catch (e) {}
+  }
 
   Future<void> loadFeed({AtUri? generatorUri}) async {
     emit(FeedLoading());
 
     try {
+      await loadContentLabelPreferences();
+
       final Set<String> seenRootUris = {};
       final List<FeedView> dedupedFeed = [];
       final Feed feeds = await _fetchFeed(generatorUri: generatorUri);

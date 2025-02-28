@@ -12,11 +12,13 @@ class PostDetailPage extends StatelessWidget {
     required this.post,
     required this.reason,
     required this.reply,
+    required this.contentLabelPreferences,
   });
 
   final Post post;
   final Reason? reason;
   final Reply? reply;
+  final List<ContentLabelPreference> contentLabelPreferences;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,7 @@ class PostDetailPage extends StatelessWidget {
                 reason: reason,
                 reply: reply,
                 detailed: true,
+                contentLabelPreferences: contentLabelPreferences,
               ),
             ],
           ),

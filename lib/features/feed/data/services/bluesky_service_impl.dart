@@ -42,6 +42,30 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
+  Future<List<ContentLabelPreference>> getContentPreferences() async {
+    try {
+      final preferences = await getPreferences();
+
+      final contentLabelPrefs =
+          preferences.preferences
+              .map((pref) => pref.data)
+              .whereType<ContentLabelPreference>()
+              .toList();
+
+      return contentLabelPrefs;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+          return getContentPreferences();
+        }
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<Feed> getFeed({
     required AtUri generatorUri,
     String? cursor,

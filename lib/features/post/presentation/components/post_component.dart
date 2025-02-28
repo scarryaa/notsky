@@ -19,18 +19,22 @@ class PostComponent extends StatefulWidget {
     required this.reason,
     required this.reply,
     required this.isReplyToMissingPost,
+    required this.contentLabelPreferences,
   });
 
   final Reason? reason;
   final Post post;
   final Reply? reply;
   final bool isReplyToMissingPost;
+  final List<ContentLabelPreference> contentLabelPreferences;
 
   @override
   State<PostComponent> createState() => _PostComponentState();
 }
 
 class _PostComponentState extends State<PostComponent> {
+  bool _mediaContentExpanded = false;
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +57,7 @@ class _PostComponentState extends State<PostComponent> {
               post: widget.post,
               reply: widget.reply,
               reason: widget.reason,
+              contentLabelPreferences: widget.contentLabelPreferences,
             ),
       ),
     );
@@ -151,6 +156,39 @@ class _PostComponentState extends State<PostComponent> {
                                   avatar = profile?.avatar;
                                 }
 
+                                bool shouldHide = false;
+                                bool shouldWarn = false;
+                                List<String> warningLabels = [];
+
+                                // TODO extract reused logic to util function
+                                for (var postLabel in widget.post.labels!) {
+                                  for (var preference
+                                      in widget.contentLabelPreferences) {
+                                    if (postLabel.value.toLowerCase() ==
+                                        preference.label.toLowerCase()) {
+                                      if (preference.labelerDid == null ||
+                                          postLabel.src ==
+                                              preference.labelerDid) {
+                                        if (preference.visibility ==
+                                            ContentLabelVisibility.hide) {
+                                          shouldHide = true;
+                                          break;
+                                        } else if (preference.visibility ==
+                                            ContentLabelVisibility.warn) {
+                                          shouldWarn = true;
+                                          if (!warningLabels.contains(
+                                            postLabel.value,
+                                          )) {
+                                            warningLabels.add(postLabel.value);
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+
+                                  if (shouldHide) break;
+                                }
+
                                 showModalBottomSheet(
                                   isScrollControlled: true,
                                   constraints: BoxConstraints(
@@ -169,6 +207,7 @@ class _PostComponentState extends State<PostComponent> {
                                   ),
                                   builder:
                                       (context) => ReplyComponent(
+                                        hideOrWarn: shouldHide || shouldWarn,
                                         onCancel: () {
                                           Navigator.pop(context);
                                         },
@@ -312,6 +351,44 @@ class _PostComponentState extends State<PostComponent> {
   }
 
   Widget _buildPostContent() {
+    bool shouldHide = false;
+    bool shouldWarn = false;
+    List<String> warningLabels = [];
+
+    for (var postLabel in widget.post.labels!) {
+      for (var preference in widget.contentLabelPreferences) {
+        if (postLabel.value.toLowerCase() == preference.label.toLowerCase()) {
+          if (preference.labelerDid == null ||
+              postLabel.src == preference.labelerDid) {
+            if (preference.visibility == ContentLabelVisibility.hide) {
+              shouldHide = true;
+              break;
+            } else if (preference.visibility == ContentLabelVisibility.warn) {
+              shouldWarn = true;
+              if (!warningLabels.contains(postLabel.value)) {
+                warningLabels.add(postLabel.value);
+              }
+            }
+          }
+        }
+      }
+
+      if (shouldHide) break;
+    }
+
+    if (shouldHide) {
+      return Container(
+        padding: EdgeInsets.symmetric(vertical: 8.0),
+        child: Text(
+          'Content hidden',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -324,6 +401,52 @@ class _PostComponentState extends State<PostComponent> {
               fontSize: 14.0,
             ),
           ),
+
+        if (shouldWarn)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                margin: EdgeInsets.symmetric(vertical: 8.0),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.amber, size: 18.0),
+                    SizedBox(width: 8.0),
+                    Expanded(
+                      child: Text(
+                        warningLabels.join(', '),
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _mediaContentExpanded = !_mediaContentExpanded;
+                        });
+                      },
+                      child: Text(_mediaContentExpanded ? 'Hide' : 'Show'),
+                    ),
+                  ],
+                ),
+              ),
+              if (_mediaContentExpanded) _buildMediaContent(),
+            ],
+          )
+        else
+          _buildMediaContent(),
+      ],
+    );
+  }
+
+  Widget _buildMediaContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         SharedPostMethods.buildGifOrYoutubeVideo(widget.post),
         SharedPostMethods.buildVideo(widget.post),
         _buildImageGrid(),

@@ -2,22 +2,32 @@ import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/post/presentation/components/avatar_component.dart';
 import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
+import 'package:notsky/features/post/presentation/components/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/shared_post_methods.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 
 class DetailedPostComponent extends StatefulWidget {
-  const DetailedPostComponent({super.key, required this.post});
+  const DetailedPostComponent({
+    super.key,
+    required this.post,
+    required this.contentLabelPreferences,
+  });
 
   final Post post;
+  final List<ContentLabelPreference> contentLabelPreferences;
 
   @override
   State<DetailedPostComponent> createState() => _DetailedPostComponentState();
 }
 
 class _DetailedPostComponentState extends State<DetailedPostComponent> {
+  bool _mediaContentExpanded = false;
+
   @override
   void initState() {
     super.initState();
@@ -107,8 +117,98 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
                             newLikeCount,
                           );
                         },
-                        onReply: () {},
-                        onMore: () {},
+                        onReply: () {
+                          String? avatar;
+                          final authState = context.read<AuthCubit>().state;
+                          if (authState is AuthSuccess) {
+                            final profile = authState.profile;
+                            avatar = profile?.avatar;
+                          }
+
+                          bool shouldHide = false;
+                          bool shouldWarn = false;
+                          List<String> warningLabels = [];
+
+                          // TODO extract reused logic to util function
+                          for (var postLabel in widget.post.labels!) {
+                            for (var preference
+                                in widget.contentLabelPreferences) {
+                              if (postLabel.value.toLowerCase() ==
+                                  preference.label.toLowerCase()) {
+                                if (preference.labelerDid == null ||
+                                    postLabel.src == preference.labelerDid) {
+                                  if (preference.visibility ==
+                                      ContentLabelVisibility.hide) {
+                                    shouldHide = true;
+                                    break;
+                                  } else if (preference.visibility ==
+                                      ContentLabelVisibility.warn) {
+                                    shouldWarn = true;
+                                    if (!warningLabels.contains(
+                                      postLabel.value,
+                                    )) {
+                                      warningLabels.add(postLabel.value);
+                                    }
+                                  }
+                                }
+                              }
+                            }
+
+                            if (shouldHide) break;
+                          }
+
+                          showModalBottomSheet(
+                            isScrollControlled: true,
+                            constraints: BoxConstraints(
+                              minHeight:
+                                  MediaQuery.of(context).size.height - 250,
+                              maxHeight:
+                                  MediaQuery.of(context).size.height - 250,
+                            ),
+                            context: context,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(12.0),
+                              ),
+                            ),
+                            builder:
+                                (context) => ReplyComponent(
+                                  hideOrWarn: shouldHide || shouldWarn,
+                                  onCancel: () {
+                                    Navigator.pop(context);
+                                  },
+                                  onReply: (String text) {
+                                    final auth = context.read<AuthCubit>();
+                                    final blueskyService =
+                                        auth.getBlueskyService();
+
+                                    blueskyService.reply(
+                                      text,
+                                      rootCid:
+                                          widget.post.record.reply?.root.cid ??
+                                          widget.post.cid,
+                                      rootUri:
+                                          widget.post.record.reply?.root.uri ??
+                                          widget.post.uri,
+                                      parentCid: widget.post.cid,
+                                      parentUri: widget.post.uri,
+                                    );
+                                    Navigator.of(context).pop();
+                                  },
+                                  replyPost: widget.post,
+                                  userAvatar: avatar,
+                                ),
+                          );
+                        },
+                        onMore: () {
+                          showModalBottomSheet(
+                            context: context,
+                            builder:
+                                (context) => Container(
+                                  // TODO
+                                ),
+                          );
+                        },
                         onRepost: () async {
                           final currentRepostCount =
                               state.repostCount ??
@@ -240,6 +340,44 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
   }
 
   Widget _buildPostContent() {
+    bool shouldHide = false;
+    bool shouldWarn = false;
+    List<String> warningLabels = [];
+
+    for (var postLabel in widget.post.labels!) {
+      for (var preference in widget.contentLabelPreferences) {
+        if (postLabel.value.toLowerCase() == preference.label.toLowerCase()) {
+          if (preference.labelerDid == null ||
+              postLabel.src == preference.labelerDid) {
+            if (preference.visibility == ContentLabelVisibility.hide) {
+              shouldHide = true;
+              break;
+            } else if (preference.visibility == ContentLabelVisibility.warn) {
+              shouldWarn = true;
+              if (!warningLabels.contains(postLabel.value)) {
+                warningLabels.add(postLabel.value);
+              }
+            }
+          }
+        }
+      }
+
+      if (shouldHide) break;
+    }
+
+    if (shouldHide) {
+      return Container(
+        padding: EdgeInsets.symmetric(vertical: 8.0),
+        child: Text(
+          'Content hidden',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,6 +389,52 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
             fontSize: 14.0,
           ),
         ),
+
+        if (shouldWarn)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                margin: EdgeInsets.symmetric(vertical: 8.0),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.amber, size: 18.0),
+                    SizedBox(width: 8.0),
+                    Expanded(
+                      child: Text(
+                        warningLabels.join(', '),
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _mediaContentExpanded = !_mediaContentExpanded;
+                        });
+                      },
+                      child: Text(_mediaContentExpanded ? 'Hide' : 'Show'),
+                    ),
+                  ],
+                ),
+              ),
+              if (_mediaContentExpanded) _buildMediaContent(),
+            ],
+          )
+        else
+          _buildMediaContent(),
+      ],
+    );
+  }
+
+  Widget _buildMediaContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         SharedPostMethods.buildGifOrYoutubeVideo(widget.post),
         SharedPostMethods.buildVideo(widget.post),
         _buildImageGrid(),

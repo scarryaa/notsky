@@ -12,6 +12,7 @@ class BasePostComponent extends StatelessWidget {
   const BasePostComponent({
     super.key,
     required this.postContent,
+    required this.contentLabelPreferences,
     this.reason,
     this.reply,
     this.detailed = false,
@@ -23,6 +24,7 @@ class BasePostComponent extends StatelessWidget {
   final Reply? reply;
   final bool detailed;
   final bool isReplyToMissingPost;
+  final List<ContentLabelPreference> contentLabelPreferences;
 
   @override
   Widget build(BuildContext context) {
@@ -34,12 +36,16 @@ class BasePostComponent extends StatelessWidget {
                 PostCubit(context.read<AuthCubit>().getBlueskyService()),
         child:
             detailed
-                ? DetailedPostComponent(post: post)
+                ? DetailedPostComponent(
+                  post: post,
+                  contentLabelPreferences: contentLabelPreferences,
+                )
                 : PostComponent(
                   post: post,
                   reason: reason,
                   reply: reply,
                   isReplyToMissingPost: isReplyToMissingPost,
+                  contentLabelPreferences: contentLabelPreferences,
                 ),
       ),
     };
