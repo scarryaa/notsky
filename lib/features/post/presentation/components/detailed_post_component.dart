@@ -338,22 +338,19 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
   }
 
   Widget _buildReplies(List<dynamic> replies) {
-    return ListView.builder(
-      shrinkWrap: true,
+    return ListView.separated(
       physics: NeverScrollableScrollPhysics(),
-      itemCount: replies.length * 2 - 1,
-      itemBuilder: (context, index) {
-        if (index.isOdd) {
-          return Divider(
+      shrinkWrap: true,
+      itemCount: replies.length,
+      separatorBuilder:
+          (context, index) => Divider(
             color: Theme.of(
               context,
             ).colorScheme.outline.withValues(alpha: 0.25),
             height: 1,
-          );
-        }
-
-        final itemIndex = index ~/ 2;
-        final reply = replies[itemIndex];
+          ),
+      itemBuilder: (context, index) {
+        final reply = replies[index];
 
         if (reply.data is PostThreadViewRecord) {
           final data = reply.data;
@@ -367,15 +364,8 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
                 contentLabelPreferences: widget.contentLabelPreferences,
                 detailed: false,
               ),
-
               if (data.replies != null && data.replies!.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _buildReplyItems(data.replies!),
-                  ),
-                ),
+                _buildFlattenedReplies(data.replies!, 1),
             ],
           );
         }
@@ -384,50 +374,34 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
     );
   }
 
-  List<Widget> _buildReplyItems(List<dynamic> replies) {
-    List<Widget> items = [];
+  Widget _buildFlattenedReplies(List<dynamic> replies, int indentLevel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children:
+          replies.map((reply) {
+            if (reply.data is PostThreadViewRecord) {
+              final data = reply.data;
+              final postContent = RegularPost(data.post);
 
-    for (int i = 0; i < replies.length; i++) {
-      final reply = replies[i];
-
-      if (reply.data is PostThreadViewRecord) {
-        final data = reply.data;
-        final postContent = RegularPost(data.post);
-
-        Widget replyWidget = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            BasePostComponent(
-              postContent: postContent,
-              contentLabelPreferences: widget.contentLabelPreferences,
-              detailed: false,
-            ),
-          ],
-        );
-
-        if (data.replies != null && data.replies!.isNotEmpty) {
-          replyWidget = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              replyWidget,
-              Padding(
-                padding: EdgeInsets.only(left: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _buildReplyItems(data.replies!),
-                ),
-              ),
-            ],
-          );
-        }
-
-        items.add(replyWidget);
-      } else {
-        items.add(SizedBox.shrink());
-      }
-    }
-
-    return items;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(left: 8.0 * indentLevel),
+                    child: BasePostComponent(
+                      postContent: postContent,
+                      contentLabelPreferences: widget.contentLabelPreferences,
+                      detailed: false,
+                    ),
+                  ),
+                  if (data.replies != null && data.replies!.isNotEmpty)
+                    _buildFlattenedReplies(data.replies!, indentLevel + 1),
+                ],
+              );
+            }
+            return SizedBox.shrink();
+          }).toList(),
+    );
   }
 
   Widget _buildImageGrid() {

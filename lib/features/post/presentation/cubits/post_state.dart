@@ -1,5 +1,6 @@
 import 'package:atproto_core/atproto_core.dart';
 import 'package:bluesky/bluesky.dart';
+import 'package:flutter/cupertino.dart';
 
 enum PostActionType { none, like, unlike, repost, unrepost, reply }
 
@@ -19,6 +20,8 @@ class PostState {
   final bool isThreadLoading;
   final PostThread? postThread;
   final String? threadError;
+  final bool isLoadingMore;
+  final String? cursor;
 
   PostState({
     this.isLiked = false,
@@ -33,6 +36,8 @@ class PostState {
     this.isThreadLoading = false,
     this.postThread,
     this.threadError,
+    this.cursor,
+    this.isLoadingMore = false,
   });
 
   PostState copyWith({
@@ -48,6 +53,8 @@ class PostState {
     bool? isThreadLoading,
     PostThread? postThread,
     String? threadError,
+    bool? isLoadingMore,
+    String? cursor,
   }) {
     return PostState(
       isLiked: isLiked ?? this.isLiked,
@@ -62,6 +69,8 @@ class PostState {
       isThreadLoading: isThreadLoading ?? this.isThreadLoading,
       postThread: postThread ?? this.postThread,
       threadError: threadError ?? this.threadError,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      cursor: cursor ?? this.cursor,
     );
   }
 }
