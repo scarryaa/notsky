@@ -13,3 +13,9 @@ class MissingPost extends PostContent {
 
   MissingPost(this.notFoundPost);
 }
+
+class BlockPost extends PostContent {
+  final BlockedPost blockedPost;
+
+  BlockPost(this.blockedPost);
+}

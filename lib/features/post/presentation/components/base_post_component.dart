@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
+import 'package:notsky/features/post/presentation/components/blocked_post_component.dart';
 import 'package:notsky/features/post/presentation/components/detailed_post_component.dart';
 import 'package:notsky/features/post/presentation/components/not_found_post_component.dart';
 import 'package:notsky/features/post/presentation/components/post_component.dart';
@@ -17,6 +18,7 @@ class BasePostComponent extends StatelessWidget {
     this.reply,
     this.detailed = false,
     this.isReplyToMissingPost = false,
+    this.isReplyToBlockedPost = false,
   });
 
   final PostContent postContent;
@@ -24,11 +26,13 @@ class BasePostComponent extends StatelessWidget {
   final Reply? reply;
   final bool detailed;
   final bool isReplyToMissingPost;
+  final bool isReplyToBlockedPost;
   final List<ContentLabelPreference> contentLabelPreferences;
 
   @override
   Widget build(BuildContext context) {
     return switch (postContent) {
+      BlockPost() => BlockedPostComponent(),
       MissingPost() => NotFoundPostComponent(),
       RegularPost(post: final post) => BlocProvider(
         create:
@@ -45,6 +49,7 @@ class BasePostComponent extends StatelessWidget {
                   reason: reason,
                   reply: reply,
                   isReplyToMissingPost: isReplyToMissingPost,
+                  isReplyToBlockedPost: isReplyToBlockedPost,
                   contentLabelPreferences: contentLabelPreferences,
                 ),
       ),

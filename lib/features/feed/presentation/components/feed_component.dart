@@ -108,6 +108,8 @@ class _FeedComponentState extends State<FeedComponent> {
                             reply: feedItem.reply,
                             isReplyToMissingPost:
                                 feedItem.reply?.parent.data is NotFoundPost,
+                            isReplyToBlockedPost:
+                                feedItem.reply?.parent.data is BlockedPost,
                             contentLabelPreferences:
                                 context
                                     .read<FeedCubit>()

@@ -14,74 +14,175 @@ class ThreadComponent extends StatelessWidget {
     required this.contentLabelPreferences,
   });
 
-  Widget _buildDeletedPostComponent(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      padding: const EdgeInsets.only(
-        left: 8.0,
-        right: 8.0,
-        top: 6.0,
-        bottom: 10.0,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Theme.of(
-                context,
-              ).colorScheme.outline.withValues(alpha: 0.2),
-            ),
-            child: Icon(
-              Icons.person_outline,
-              size: 24,
-              color: Theme.of(
-                context,
-              ).colorScheme.outline.withValues(alpha: 0.5),
-            ),
+  Widget _buildBlockedPostComponent(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8.0),
+          padding: const EdgeInsets.only(
+            left: 8.0,
+            right: 8.0,
+            top: 6.0,
+            bottom: 10.0,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Username placeholder
-                Container(
-                  width: 120,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withValues(alpha: 0.15),
-                  ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.2),
                 ),
-                const SizedBox(height: 8),
-                // Content placeholder
-                Row(
+                child: Icon(
+                  Icons.person_outline,
+                  size: 24,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.5),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Deleted post',
-                      style: TextStyle(
+                    // Username placeholder
+                    Container(
+                      width: 120,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ).colorScheme.outline.withValues(alpha: 0.15),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Content placeholder
+                    Row(
+                      children: [
+                        Text(
+                          'Blocked post',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          left: 27,
+          top: 56,
+          bottom: 0,
+          width: 2,
+          child: Container(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeletedPostComponent(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8.0),
+          padding: const EdgeInsets.only(
+            left: 8.0,
+            right: 8.0,
+            top: 6.0,
+            bottom: 10.0,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.2),
+                ),
+                child: Icon(
+                  Icons.person_outline,
+                  size: 24,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.5),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Username placeholder
+                    Container(
+                      width: 120,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Content placeholder
+                    Row(
+                      children: [
+                        Text(
+                          'Deleted post',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          left: 27,
+          top: 56,
+          bottom: 0,
+          width: 2,
+          child: Container(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+        ),
+      ],
     );
   }
 
@@ -101,6 +202,8 @@ class ThreadComponent extends StatelessWidget {
             reply: feedItem.reply,
             contentLabelPreferences: contentLabelPreferences,
           )
+        else if (feedItem.reply!.parent.data is BlockedPost)
+          _buildBlockedPostComponent(context)
         else if (feedItem.post.record.reply?.root.uri !=
             (feedItem.reply!.parent.data as Post).uri)
           Stack(
@@ -157,6 +260,7 @@ class ThreadComponent extends StatelessWidget {
           ),
 
         if (feedItem.reply!.parent.data is! NotFoundPost &&
+            feedItem.reply!.parent.data is! BlockedPost &&
             feedItem.post.record.reply?.root.uri !=
                 (feedItem.reply!.parent.data as Post).uri &&
             feedItem.post.record.reply?.root.uri !=
@@ -186,6 +290,8 @@ class ThreadComponent extends StatelessWidget {
                 reply: feedItem.reply,
                 contentLabelPreferences: contentLabelPreferences,
               )
+            else if (feedItem.reply!.parent.data is BlockedPost)
+              SizedBox.shrink()
             else
               BasePostComponent(
                 postContent: RegularPost(feedItem.reply!.parent.data as Post),

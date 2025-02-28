@@ -19,6 +19,7 @@ class PostComponent extends StatefulWidget {
     required this.reason,
     required this.reply,
     required this.isReplyToMissingPost,
+    required this.isReplyToBlockedPost,
     required this.contentLabelPreferences,
   });
 
@@ -26,6 +27,7 @@ class PostComponent extends StatefulWidget {
   final Post post;
   final Reply? reply;
   final bool isReplyToMissingPost;
+  final bool isReplyToBlockedPost;
   final List<ContentLabelPreference> contentLabelPreferences;
 
   @override
@@ -97,6 +99,30 @@ class _PostComponentState extends State<PostComponent> {
                                 _buildIndexedAt(),
                               ],
                             ),
+                            if (widget.isReplyToBlockedPost)
+                              Row(
+                                spacing: 2.0,
+                                children: [
+                                  Icon(
+                                    Icons.reply,
+                                    size: 12.5,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                  Text(
+                                    'Reply to a blocked post',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             if (widget.isReplyToMissingPost)
                               Row(
                                 spacing: 2.0,
@@ -289,7 +315,10 @@ class _PostComponentState extends State<PostComponent> {
     return Flexible(
       flex: 1,
       child: Text(
-        widget.post.author.displayName ?? '',
+        widget.post.author.displayName
+                ?.replaceAll('\r\n', '')
+                .replaceAll('\n', '') ??
+            '',
         softWrap: false,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(fontWeight: FontWeight.bold),
@@ -300,7 +329,7 @@ class _PostComponentState extends State<PostComponent> {
   Widget _buildHandle() {
     return Flexible(
       child: Text(
-        '@${widget.post.author.handle}',
+        '@${widget.post.author.handle.replaceAll('\r\n', '').replaceAll('\n', '')}',
         softWrap: false,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),

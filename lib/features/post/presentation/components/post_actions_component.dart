@@ -90,7 +90,7 @@ class PostActionsComponent extends StatelessWidget {
     Alignment iconAlignment = Alignment.center,
   }) {
     return SizedBox(
-      width: 65.0,
+      width: 62.0,
       child: Row(
         mainAxisAlignment: mainAxisAlignment,
         mainAxisSize: MainAxisSize.min,

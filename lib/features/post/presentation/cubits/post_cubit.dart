@@ -53,6 +53,41 @@ class PostCubit extends Cubit<PostState> {
     return super.close();
   }
 
+  Future<void> getThread(AtUri uri, {int depth = 10}) async {
+    try {
+      final loadingState = state.copyWith(
+        isThreadLoading: true,
+        threadError: null,
+      );
+      emit(loadingState);
+      if (_postUri != null) {
+        _stateManager.updatePostState(_postUri!, loadingState);
+      }
+
+      final threadResult = await _blueskyService.getThread(uri, depth: depth);
+
+      final threadPosts = threadResult;
+
+      final successState = state.copyWith(
+        isThreadLoading: false,
+        postThread: threadPosts,
+      );
+      emit(successState);
+      if (_postUri != null) {
+        _stateManager.updatePostState(_postUri!, successState);
+      }
+    } catch (e) {
+      final errorState = state.copyWith(
+        isThreadLoading: false,
+        threadError: e.toString(),
+      );
+      emit(errorState);
+      if (_postUri != null) {
+        _stateManager.updatePostState(_postUri!, errorState);
+      }
+    }
+  }
+
   void updateLikeCount(int count) {
     final updatedState = state.copyWith(likeCount: count);
     emit(updatedState);

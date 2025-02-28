@@ -1,10 +1,12 @@
-import 'package:bluesky/bluesky.dart' hide Image;
+import 'package:bluesky/bluesky.dart' hide Image, ListView;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
+import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/avatar_component.dart';
+import 'package:notsky/features/post/presentation/components/base_post_component.dart';
 import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
 import 'package:notsky/features/post/presentation/components/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/shared_post_methods.dart';
@@ -40,200 +42,386 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
       widget.post.likeCount,
       widget.post.repostCount + widget.post.quoteCount,
     );
+
+    context.read<PostCubit>().getThread(widget.post.uri);
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PostCubit, PostState>(
       builder:
-          (context, state) => Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.outline.withValues(alpha: 0.25),
+          (context, state) => Column(
+            children: [
+              _buildParentPostsSection(state),
+
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.25),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(height: 2.0),
-                  Row(
-                    spacing: 8.0,
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      AvatarComponent(
-                        avatar: widget.post.author.avatar,
-                        size: 40.0,
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
+                      SizedBox(height: 2.0),
+                      Row(
+                        spacing: 8.0,
+                        mainAxisSize: MainAxisSize.max,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildDisplayName(),
-                          _buildHandle(context),
+                          AvatarComponent(
+                            avatar: widget.post.author.avatar,
+                            size: 40.0,
+                          ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDisplayName(),
+                              _buildHandle(context),
+                              SizedBox(height: 2.0),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           SizedBox(height: 2.0),
+                          _buildPostContent(),
+                          SizedBox(height: 6.0),
+                          _buildIndexedAt(context),
+                          SizedBox(height: 8.0),
+                          _buildStats(context, state),
+                          SizedBox(height: 4.0),
+                          PostActionsComponent(
+                            iconSize: 20.0,
+                            indentEnd: false,
+                            likeCount: state.likeCount ?? widget.post.likeCount,
+                            replyCount: widget.post.replyCount,
+                            repostCount:
+                                state.repostCount ??
+                                (widget.post.repostCount +
+                                    widget.post.quoteCount),
+                            repostedByViewer: state.isReposted,
+                            likedByViewer: state.isLiked,
+                            // TODO post actions
+                            onLike: () async {
+                              final newLikeCount =
+                                  (state.likeCount ?? widget.post.likeCount) +
+                                  (state.isLiked ? -1 : 1);
+
+                              await context.read<PostCubit>().toggleLike(
+                                widget.post.cid,
+                                widget.post.uri,
+                              );
+
+                              context.read<PostCubit>().updateLikeCount(
+                                newLikeCount,
+                              );
+                            },
+                            onReply: () {
+                              String? avatar;
+                              final authState = context.read<AuthCubit>().state;
+                              if (authState is AuthSuccess) {
+                                final profile = authState.profile;
+                                avatar = profile?.avatar;
+                              }
+
+                              bool shouldHide = false;
+                              bool shouldWarn = false;
+                              List<String> warningLabels = [];
+
+                              // TODO extract reused logic to util function
+                              for (var postLabel in widget.post.labels!) {
+                                for (var preference
+                                    in widget.contentLabelPreferences) {
+                                  if (postLabel.value.toLowerCase() ==
+                                      preference.label.toLowerCase()) {
+                                    if (preference.labelerDid == null ||
+                                        postLabel.src ==
+                                            preference.labelerDid) {
+                                      if (preference.visibility ==
+                                          ContentLabelVisibility.hide) {
+                                        shouldHide = true;
+                                        break;
+                                      } else if (preference.visibility ==
+                                          ContentLabelVisibility.warn) {
+                                        shouldWarn = true;
+                                        if (!warningLabels.contains(
+                                          postLabel.value,
+                                        )) {
+                                          warningLabels.add(postLabel.value);
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+
+                                if (shouldHide) break;
+                              }
+
+                              showModalBottomSheet(
+                                isScrollControlled: true,
+                                constraints: BoxConstraints(
+                                  minHeight:
+                                      MediaQuery.of(context).size.height - 250,
+                                  maxHeight:
+                                      MediaQuery.of(context).size.height - 250,
+                                ),
+                                context: context,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(12.0),
+                                  ),
+                                ),
+                                builder:
+                                    (context) => ReplyComponent(
+                                      hideOrWarn: shouldHide || shouldWarn,
+                                      onCancel: () {
+                                        Navigator.pop(context);
+                                      },
+                                      onReply: (String text) {
+                                        final auth = context.read<AuthCubit>();
+                                        final blueskyService =
+                                            auth.getBlueskyService();
+
+                                        blueskyService.reply(
+                                          text,
+                                          rootCid:
+                                              widget
+                                                  .post
+                                                  .record
+                                                  .reply
+                                                  ?.root
+                                                  .cid ??
+                                              widget.post.cid,
+                                          rootUri:
+                                              widget
+                                                  .post
+                                                  .record
+                                                  .reply
+                                                  ?.root
+                                                  .uri ??
+                                              widget.post.uri,
+                                          parentCid: widget.post.cid,
+                                          parentUri: widget.post.uri,
+                                        );
+                                        Navigator.of(context).pop();
+                                      },
+                                      replyPost: widget.post,
+                                      userAvatar: avatar,
+                                    ),
+                              );
+                            },
+                            onMore: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder:
+                                    (context) => Container(
+                                      // TODO
+                                    ),
+                              );
+                            },
+                            onRepost: () async {
+                              final currentRepostCount =
+                                  state.repostCount ??
+                                  (widget.post.repostCount +
+                                      widget.post.quoteCount);
+                              final newRepostCount =
+                                  currentRepostCount +
+                                  (state.isReposted ? -1 : 1);
+
+                              await context.read<PostCubit>().toggleRepost(
+                                widget.post.cid,
+                                widget.post.uri,
+                              );
+
+                              context.read<PostCubit>().updateRepostCount(
+                                newRepostCount,
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ],
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 2.0),
-                      _buildPostContent(),
-                      SizedBox(height: 6.0),
-                      _buildIndexedAt(context),
-                      SizedBox(height: 8.0),
-                      _buildStats(context, state),
-                      SizedBox(height: 4.0),
-                      PostActionsComponent(
-                        iconSize: 20.0,
-                        indentEnd: false,
-                        likeCount: state.likeCount ?? widget.post.likeCount,
-                        replyCount: widget.post.replyCount,
-                        repostCount:
-                            state.repostCount ??
-                            (widget.post.repostCount + widget.post.quoteCount),
-                        repostedByViewer: state.isReposted,
-                        likedByViewer: state.isLiked,
-                        // TODO post actions
-                        onLike: () async {
-                          final newLikeCount =
-                              (state.likeCount ?? widget.post.likeCount) +
-                              (state.isLiked ? -1 : 1);
-
-                          await context.read<PostCubit>().toggleLike(
-                            widget.post.cid,
-                            widget.post.uri,
-                          );
-
-                          context.read<PostCubit>().updateLikeCount(
-                            newLikeCount,
-                          );
-                        },
-                        onReply: () {
-                          String? avatar;
-                          final authState = context.read<AuthCubit>().state;
-                          if (authState is AuthSuccess) {
-                            final profile = authState.profile;
-                            avatar = profile?.avatar;
-                          }
-
-                          bool shouldHide = false;
-                          bool shouldWarn = false;
-                          List<String> warningLabels = [];
-
-                          // TODO extract reused logic to util function
-                          for (var postLabel in widget.post.labels!) {
-                            for (var preference
-                                in widget.contentLabelPreferences) {
-                              if (postLabel.value.toLowerCase() ==
-                                  preference.label.toLowerCase()) {
-                                if (preference.labelerDid == null ||
-                                    postLabel.src == preference.labelerDid) {
-                                  if (preference.visibility ==
-                                      ContentLabelVisibility.hide) {
-                                    shouldHide = true;
-                                    break;
-                                  } else if (preference.visibility ==
-                                      ContentLabelVisibility.warn) {
-                                    shouldWarn = true;
-                                    if (!warningLabels.contains(
-                                      postLabel.value,
-                                    )) {
-                                      warningLabels.add(postLabel.value);
-                                    }
-                                  }
-                                }
-                              }
-                            }
-
-                            if (shouldHide) break;
-                          }
-
-                          showModalBottomSheet(
-                            isScrollControlled: true,
-                            constraints: BoxConstraints(
-                              minHeight:
-                                  MediaQuery.of(context).size.height - 250,
-                              maxHeight:
-                                  MediaQuery.of(context).size.height - 250,
-                            ),
-                            context: context,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(12.0),
-                              ),
-                            ),
-                            builder:
-                                (context) => ReplyComponent(
-                                  hideOrWarn: shouldHide || shouldWarn,
-                                  onCancel: () {
-                                    Navigator.pop(context);
-                                  },
-                                  onReply: (String text) {
-                                    final auth = context.read<AuthCubit>();
-                                    final blueskyService =
-                                        auth.getBlueskyService();
-
-                                    blueskyService.reply(
-                                      text,
-                                      rootCid:
-                                          widget.post.record.reply?.root.cid ??
-                                          widget.post.cid,
-                                      rootUri:
-                                          widget.post.record.reply?.root.uri ??
-                                          widget.post.uri,
-                                      parentCid: widget.post.cid,
-                                      parentUri: widget.post.uri,
-                                    );
-                                    Navigator.of(context).pop();
-                                  },
-                                  replyPost: widget.post,
-                                  userAvatar: avatar,
-                                ),
-                          );
-                        },
-                        onMore: () {
-                          showModalBottomSheet(
-                            context: context,
-                            builder:
-                                (context) => Container(
-                                  // TODO
-                                ),
-                          );
-                        },
-                        onRepost: () async {
-                          final currentRepostCount =
-                              state.repostCount ??
-                              (widget.post.repostCount +
-                                  widget.post.quoteCount);
-                          final newRepostCount =
-                              currentRepostCount + (state.isReposted ? -1 : 1);
-
-                          await context.read<PostCubit>().toggleRepost(
-                            widget.post.cid,
-                            widget.post.uri,
-                          );
-
-                          context.read<PostCubit>().updateRepostCount(
-                            newRepostCount,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
+
+              _buildRepliesSection(state),
+            ],
           ),
     );
+  }
+
+  Widget _buildParentPostsSection(PostState state) {
+    if (state.isThreadLoading || state.postThread == null) {
+      return SizedBox.shrink();
+    }
+
+    final threadData = state.postThread!.thread.data as PostThreadViewRecord;
+    if (threadData.parent == null) {
+      return SizedBox.shrink();
+    }
+
+    return _buildParentPosts(threadData.parent!.data);
+  }
+
+  Widget _buildRepliesSection(PostState state) {
+    if (state.isThreadLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    if (state.threadError != null) {
+      return Text('Error loading thread: ${state.threadError}');
+    }
+
+    if (state.postThread == null) {
+      return SizedBox.shrink();
+    }
+
+    final threadData = state.postThread!.thread.data as PostThreadViewRecord;
+    if (threadData.replies == null || threadData.replies!.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+        ),
+      ),
+      child: _buildReplies(threadData.replies!),
+    );
+  }
+
+  Widget _buildParentPosts(dynamic parent) {
+    if (parent is PostThreadViewRecord) {
+      final postContent = RegularPost(parent.post);
+
+      Widget parentWidget = BasePostComponent(
+        postContent: postContent,
+        contentLabelPreferences: widget.contentLabelPreferences,
+        detailed: false,
+      );
+
+      if (parent.parent != null) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [_buildParentPosts(parent.parent!.data), parentWidget],
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [parentWidget],
+      );
+    }
+    return SizedBox.shrink();
+  }
+
+  Widget _buildReplies(List<dynamic> replies) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: replies.length * 2 - 1,
+      itemBuilder: (context, index) {
+        if (index.isOdd) {
+          return Divider(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+            height: 1,
+          );
+        }
+
+        final itemIndex = index ~/ 2;
+        final reply = replies[itemIndex];
+
+        if (reply.data is PostThreadViewRecord) {
+          final data = reply.data;
+          final postContent = RegularPost(data.post);
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BasePostComponent(
+                postContent: postContent,
+                contentLabelPreferences: widget.contentLabelPreferences,
+                detailed: false,
+              ),
+
+              if (data.replies != null && data.replies!.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(left: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _buildReplyItems(data.replies!),
+                  ),
+                ),
+            ],
+          );
+        }
+        return SizedBox.shrink();
+      },
+    );
+  }
+
+  List<Widget> _buildReplyItems(List<dynamic> replies) {
+    List<Widget> items = [];
+
+    for (int i = 0; i < replies.length; i++) {
+      final reply = replies[i];
+
+      if (reply.data is PostThreadViewRecord) {
+        final data = reply.data;
+        final postContent = RegularPost(data.post);
+
+        Widget replyWidget = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BasePostComponent(
+              postContent: postContent,
+              contentLabelPreferences: widget.contentLabelPreferences,
+              detailed: false,
+            ),
+          ],
+        );
+
+        if (data.replies != null && data.replies!.isNotEmpty) {
+          replyWidget = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              replyWidget,
+              Padding(
+                padding: EdgeInsets.only(left: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _buildReplyItems(data.replies!),
+                ),
+              ),
+            ],
+          );
+        }
+
+        items.add(replyWidget);
+      } else {
+        items.add(SizedBox.shrink());
+      }
+    }
+
+    return items;
   }
 
   Widget _buildImageGrid() {
@@ -320,7 +508,10 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
     return Flexible(
       flex: 1,
       child: Text(
-        widget.post.author.displayName ?? '',
+        widget.post.author.displayName
+                ?.replaceAll('\r\n', '')
+                .replaceAll('\n', '') ??
+            '',
         softWrap: false,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(fontWeight: FontWeight.bold),
@@ -331,7 +522,7 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
   Widget _buildHandle(BuildContext context) {
     return Flexible(
       child: Text(
-        '@${widget.post.author.handle}',
+        '@${widget.post.author.handle.replaceAll('\r\n', '').replaceAll('\n', '')}',
         softWrap: false,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),

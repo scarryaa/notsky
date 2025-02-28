@@ -1,4 +1,5 @@
 import 'package:atproto_core/atproto_core.dart';
+import 'package:bluesky/bluesky.dart';
 
 enum PostActionType { none, like, unlike, repost, unrepost, reply }
 
@@ -15,6 +16,10 @@ class PostState {
   final int? likeCount;
   final int? repostCount;
 
+  final bool isThreadLoading;
+  final PostThread? postThread;
+  final String? threadError;
+
   PostState({
     this.isLiked = false,
     this.isReposted = false,
@@ -25,6 +30,9 @@ class PostState {
     this.repostUri,
     this.likeCount,
     this.repostCount,
+    this.isThreadLoading = false,
+    this.postThread,
+    this.threadError,
   });
 
   PostState copyWith({
@@ -37,6 +45,9 @@ class PostState {
     AtUri? repostUri,
     int? likeCount,
     int? repostCount,
+    bool? isThreadLoading,
+    PostThread? postThread,
+    String? threadError,
   }) {
     return PostState(
       isLiked: isLiked ?? this.isLiked,
@@ -48,6 +59,9 @@ class PostState {
       repostUri: repostUri ?? this.repostUri,
       likeCount: likeCount ?? this.likeCount,
       repostCount: repostCount ?? this.repostCount,
+      isThreadLoading: isThreadLoading ?? this.isThreadLoading,
+      postThread: postThread ?? this.postThread,
+      threadError: threadError ?? this.threadError,
     );
   }
 }

@@ -42,6 +42,23 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
+  Future<PostThread> getThread(AtUri uri, {int depth = 10}) async {
+    try {
+      final thread = await _bluesky.feed.getPostThread(uri: uri, depth: depth);
+      return thread.data;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+          return getThread(uri, depth: depth);
+        }
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<ContentLabelPreference>> getContentPreferences() async {
     try {
       final preferences = await getPreferences();

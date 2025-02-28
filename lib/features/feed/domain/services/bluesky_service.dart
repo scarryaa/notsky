@@ -19,6 +19,8 @@ abstract class BlueskyService {
     int? limit,
   });
 
+  Future<PostThread> getThread(AtUri uri, {int depth = 10});
+
   Future<FeedGenerators> getFeeds();
   Future<List<ContentLabelPreference>> getContentPreferences();
 
