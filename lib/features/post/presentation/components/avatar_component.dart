@@ -12,24 +12,30 @@ class AvatarComponent extends StatelessWidget {
       return _buildDefaultAvatar();
     }
 
-    return ClipOval(
-      child: Image.network(
-        avatar!,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: size,
-            height: size,
-            color: Colors.grey[300],
-            child: Center(child: Container()),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return _buildDefaultAvatar();
-        },
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+        borderRadius: BorderRadius.all(Radius.circular(50)),
+      ),
+      child: ClipOval(
+        child: Image.network(
+          avatar!,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: size,
+              height: size,
+              color: Colors.grey[300],
+              child: Center(child: Container()),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultAvatar();
+          },
+        ),
       ),
     );
   }
