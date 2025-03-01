@@ -27,6 +27,8 @@ class PostDetailPage extends StatefulWidget {
 
 class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
   late PostCubit _postCubit;
+  final ScrollController _scrollController = ScrollController();
+  double? _savedScrollPosition;
 
   @override
   void initState() {
@@ -43,6 +45,7 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     NotSkyApp.routeObserver.unsubscribe(this);
     super.dispose();
   }
@@ -50,6 +53,20 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
   @override
   void didPopNext() {
     _initializeThread();
+    if (_savedScrollPosition != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(_savedScrollPosition!);
+        }
+      });
+    }
+  }
+
+  @override
+  void didPushNext() {
+    if (_scrollController.hasClients) {
+      _savedScrollPosition = _scrollController.offset;
+    }
   }
 
   void _initializeThread() {
@@ -93,6 +110,7 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
           ),
         ),
         body: SingleChildScrollView(
+          controller: _scrollController,
           child: Column(
             children: [
               BasePostComponent(
