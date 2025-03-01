@@ -13,6 +13,9 @@ void main() {
 }
 
 class NotSkyApp extends StatelessWidget {
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
+
   const NotSkyApp({super.key});
 
   @override

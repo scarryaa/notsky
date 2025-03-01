@@ -5,8 +5,9 @@ import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/base_post_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
+import 'package:notsky/main.dart';
 
-class PostDetailPage extends StatelessWidget {
+class PostDetailPage extends StatefulWidget {
   const PostDetailPage({
     super.key,
     required this.post,
@@ -21,10 +22,53 @@ class PostDetailPage extends StatelessWidget {
   final List<ContentLabelPreference> contentLabelPreferences;
 
   @override
+  State<PostDetailPage> createState() => _PostDetailPageState();
+}
+
+class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
+  late PostCubit _postCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _postCubit = PostCubit(context.read<AuthCubit>().getBlueskyService());
+    _initializeThread();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    NotSkyApp.routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    NotSkyApp.routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    _initializeThread();
+  }
+
+  void _initializeThread() {
+    _postCubit.initializePost(
+      widget.post.uri.toString(),
+      widget.post.viewer.isLiked,
+      widget.post.viewer.like,
+      widget.post.viewer.isReposted,
+      widget.post.viewer.repost,
+      widget.post.likeCount,
+      widget.post.repostCount + widget.post.quoteCount,
+    );
+    _postCubit.getThread(widget.post.uri);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create:
-          (context) => PostCubit(context.read<AuthCubit>().getBlueskyService()),
+    return BlocProvider.value(
+      value: _postCubit,
       child: Scaffold(
         appBar: PreferredSize(
           preferredSize: Size(double.infinity, 60.0),
@@ -52,11 +96,11 @@ class PostDetailPage extends StatelessWidget {
           child: Column(
             children: [
               BasePostComponent(
-                postContent: RegularPost(post),
-                reason: reason,
-                reply: reply,
+                postContent: RegularPost(widget.post),
+                reason: widget.reason,
+                reply: widget.reply,
                 detailed: true,
-                contentLabelPreferences: contentLabelPreferences,
+                contentLabelPreferences: widget.contentLabelPreferences,
               ),
             ],
           ),

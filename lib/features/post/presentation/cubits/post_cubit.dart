@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:atproto/core.dart';
+import 'package:bluesky/bluesky.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/feed/domain/services/bluesky_service.dart';
 import 'package:notsky/features/post/domain/services/post_state_manager.dart';
@@ -11,6 +12,7 @@ class PostCubit extends Cubit<PostState> {
   final PostStateManager _stateManager = PostStateManager();
   String? _postUri;
   StreamSubscription? _subscription;
+  static final Map<String, PostThread> _threadCache = {};
 
   PostCubit(this._blueskyService) : super(PostState());
 
@@ -40,7 +42,7 @@ class PostCubit extends Cubit<PostState> {
     _subscription = _stateManager.postUpdates.listen((updatedUri) {
       if (updatedUri == _postUri) {
         final updatedState = _stateManager.getPostState(updatedUri);
-        if (updatedState != null) {
+        if (updatedState != null && !isClosed) {
           emit(updatedState);
         }
       }
@@ -55,11 +57,26 @@ class PostCubit extends Cubit<PostState> {
 
   Future<void> getThread(AtUri uri, {int depth = 10}) async {
     try {
+      final postUriString = uri.toString();
       final loadingState = state.copyWith(
         isThreadLoading: true,
         threadError: null,
       );
       emit(loadingState);
+
+      if (_threadCache.containsKey(postUriString)) {
+        final successState = state.copyWith(
+          postThread: _threadCache[postUriString],
+          isThreadLoading: false,
+        );
+        emit(successState);
+        if (_postUri != null) {
+          _stateManager.updatePostState(_postUri!, successState);
+        }
+
+        return;
+      }
+
       if (_postUri != null) {
         _stateManager.updatePostState(_postUri!, loadingState);
       }
@@ -67,6 +84,7 @@ class PostCubit extends Cubit<PostState> {
       final threadResult = await _blueskyService.getThread(uri, depth: depth);
 
       final threadPosts = threadResult;
+      _threadCache[postUriString] = threadPosts;
 
       final successState = state.copyWith(
         isThreadLoading: false,

@@ -6,6 +6,7 @@ import 'package:notsky/features/notifications/presentation/pages/notifications_p
 import 'package:notsky/features/post/presentation/controllers/bottom_nav_visibility_controller.dart';
 import 'package:notsky/features/profile/presentation/pages/profile_page.dart';
 import 'package:notsky/features/search/presentation/pages/search_page.dart';
+import 'package:notsky/main.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 
@@ -172,6 +173,7 @@ class _BaseScaffoldState extends State<BaseScaffold> {
   Widget _buildNavigator(int index, Widget page) {
     return Navigator(
       key: _navigatorKeys[index],
+      observers: index == 0 ? [NotSkyApp.routeObserver] : [],
       onGenerateRoute: (RouteSettings settings) {
         return NoBackgroundCupertinoPageRoute(
           settings: settings,
