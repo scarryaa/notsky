@@ -323,15 +323,45 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
       );
 
       if (parent.parent != null) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_buildParentPosts(parent.parent!.data), parentWidget],
+        return Stack(
+          children: [
+            Positioned(
+              left: 27,
+              top: 56,
+              bottom: 0,
+              width: 2,
+              child: Container(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.25),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [_buildParentPosts(parent.parent!.data), parentWidget],
+            ),
+          ],
         );
       }
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [parentWidget],
+      return Stack(
+        children: [
+          Positioned(
+            left: 27,
+            top: 56,
+            bottom: 0,
+            width: 2,
+            child: Container(
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: 0.25),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [parentWidget],
+          ),
+        ],
       );
     }
     return SizedBox.shrink();
