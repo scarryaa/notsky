@@ -111,7 +111,11 @@ class ClickableImageGrid extends StatelessWidget {
 
       return Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
           borderRadius: BorderRadius.all(Radius.circular(8.0)),
         ),
         child: ClipRRect(
