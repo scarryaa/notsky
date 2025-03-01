@@ -203,11 +203,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           onRefresh: _resetNewPostsIndicator,
         );
 
-        return SafeArea(
-          child: Scaffold(
-            drawer: _buildDrawer(context),
-            appBar: PreferredSize(
-              preferredSize: Size(double.infinity, 90.0),
+        return Scaffold(
+          drawer: _buildDrawer(context),
+          appBar: PreferredSize(
+            preferredSize: Size(double.infinity, 90.0),
+            child: SafeArea(
               child: AnimatedOpacity(
                 opacity: _isAppBarVisible ? 1.0 : 0.0,
                 duration: Duration(milliseconds: 300),
@@ -268,130 +268,127 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            body: Stack(
-              children: [
-                state is FeedListLoaded && state.feeds.feeds.isNotEmpty
-                    ? TabBarView(
-                      controller: _tabController,
-                      children: [
-                        FeedComponent(
-                          key: _feedComponentKey,
-                          isTimeline: true,
+          ),
+          body: Stack(
+            children: [
+              state is FeedListLoaded && state.feeds.feeds.isNotEmpty
+                  ? TabBarView(
+                    controller: _tabController,
+                    children: [
+                      FeedComponent(
+                        key: _feedComponentKey,
+                        isTimeline: true,
+                        scrollController: _scrollController,
+                        onRefresh: _resetNewPostsIndicator,
+                      ),
+                      ...state.feeds.feeds.map(
+                        (feed) => FeedComponent(
+                          key: ValueKey(feed.uri.toString()),
+                          generatorUri: feed.uri,
                           scrollController: _scrollController,
                           onRefresh: _resetNewPostsIndicator,
                         ),
-                        ...state.feeds.feeds.map(
-                          (feed) => FeedComponent(
-                            key: ValueKey(feed.uri.toString()),
-                            generatorUri: feed.uri,
-                            scrollController: _scrollController,
-                            onRefresh: _resetNewPostsIndicator,
+                      ),
+                    ],
+                  )
+                  : timelineComponent,
+              _showScrollTopButton
+                  ? Positioned(
+                    left: 16,
+                    bottom: 16,
+                    child: Stack(
+                      children: [
+                        OutlinedButton(
+                          onPressed: _scrollToTop,
+                          style: OutlinedButton.styleFrom(
+                            elevation: 1.0,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.surface,
+                            shape: CircleBorder(),
+                            side: BorderSide(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                            padding: EdgeInsets.all(14),
                           ),
+                          child: Icon(Icons.arrow_upward_rounded),
                         ),
+                        if (_hasNewPosts)
+                          Positioned(
+                            right: 8,
+                            top: 4,
+                            child: Container(
+                              padding: EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: BoxConstraints(
+                                minWidth: 12,
+                                minHeight: 12,
+                              ),
+                            ),
+                          ),
                       ],
-                    )
-                    : timelineComponent,
-                _showScrollTopButton
-                    ? Positioned(
-                      left: 16,
-                      bottom: 16,
-                      child: Stack(
-                        children: [
-                          OutlinedButton(
-                            onPressed: _scrollToTop,
-                            style: OutlinedButton.styleFrom(
-                              elevation: 1.0,
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.surface,
-                              shape: CircleBorder(),
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
-                              padding: EdgeInsets.all(14),
-                            ),
-                            child: Icon(Icons.arrow_upward_rounded),
-                          ),
-                          if (_hasNewPosts)
-                            Positioned(
-                              right: 8,
-                              top: 4,
-                              child: Container(
-                                padding: EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: BoxConstraints(
-                                  minWidth: 12,
-                                  minHeight: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    )
-                    : SizedBox.shrink(),
-                Positioned(
-                  right: 16,
-                  bottom: 16,
-                  child: IconButton(
-                    constraints: BoxConstraints(
-                      minWidth: 48.0,
-                      minHeight: 48.0,
                     ),
-                    onPressed: () {
-                      showModalBottomSheet(
-                        isScrollControlled: true,
-                        constraints: BoxConstraints(
-                          minHeight: MediaQuery.of(context).size.height - 250,
-                          maxHeight: MediaQuery.of(context).size.height - 250,
-                        ),
-                        context: context,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(12.0),
-                          ),
-                        ),
-                        builder: (context) {
-                          String? avatar;
-                          final authState = context.read<AuthCubit>().state;
-                          if (authState is AuthSuccess) {
-                            final profile = authState.profile;
-                            avatar = profile?.avatar;
-                          }
-
-                          return ReplyComponent(
-                            hideOrWarn: null,
-                            onCancel: () {
-                              Navigator.pop(context);
-                            },
-                            onReply: (String text) {
-                              final auth = context.read<AuthCubit>();
-                              final blueskyService = auth.getBlueskyService();
-
-                              blueskyService.post(text);
-                              Navigator.of(context).pop();
-                            },
-                            replyPost: null,
-                            userAvatar: avatar,
-                          );
-                        },
-                      );
-                    },
-                    style: ButtonStyle(
-                      elevation: WidgetStatePropertyAll(1.0),
-                      backgroundColor: WidgetStatePropertyAll(
-                        Theme.of(context).colorScheme.primary,
+                  )
+                  : SizedBox.shrink(),
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: IconButton(
+                  constraints: BoxConstraints(minWidth: 48.0, minHeight: 48.0),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      isScrollControlled: true,
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height - 250,
+                        maxHeight: MediaQuery.of(context).size.height - 250,
                       ),
-                      foregroundColor: WidgetStatePropertyAll(
-                        Theme.of(context).colorScheme.onPrimary,
+                      context: context,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(12.0),
+                        ),
                       ),
+                      builder: (context) {
+                        String? avatar;
+                        final authState = context.read<AuthCubit>().state;
+                        if (authState is AuthSuccess) {
+                          final profile = authState.profile;
+                          avatar = profile?.avatar;
+                        }
+
+                        return ReplyComponent(
+                          hideOrWarn: null,
+                          onCancel: () {
+                            Navigator.pop(context);
+                          },
+                          onReply: (String text) {
+                            final auth = context.read<AuthCubit>();
+                            final blueskyService = auth.getBlueskyService();
+
+                            blueskyService.post(text);
+                            Navigator.of(context).pop();
+                          },
+                          replyPost: null,
+                          userAvatar: avatar,
+                        );
+                      },
+                    );
+                  },
+                  style: ButtonStyle(
+                    elevation: WidgetStatePropertyAll(1.0),
+                    backgroundColor: WidgetStatePropertyAll(
+                      Theme.of(context).colorScheme.primary,
                     ),
-                    icon: Icon(Icons.edit_square, size: 22.0),
+                    foregroundColor: WidgetStatePropertyAll(
+                      Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
+                  icon: Icon(Icons.edit_square, size: 22.0),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
