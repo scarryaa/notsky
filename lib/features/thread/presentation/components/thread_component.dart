@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:notsky/features/feed/presentation/components/dashed_line_painter.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/base_post_component.dart';
+import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
+import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
 
 class ThreadComponent extends StatelessWidget {
   final FeedView feedItem;
@@ -269,7 +271,17 @@ class ThreadComponent extends StatelessWidget {
             padding: const EdgeInsets.only(left: 60.0, top: 4.0, bottom: 4.0),
             child: GestureDetector(
               onTap: () {
-                // TODO show full thread
+                Navigator.of(context).push(
+                  NoBackgroundCupertinoPageRoute(
+                    builder:
+                        (context) => PostDetailPage(
+                          post: feedItem.reply?.root.data as Post,
+                          reply: feedItem.reply,
+                          reason: feedItem.reason,
+                          contentLabelPreferences: contentLabelPreferences,
+                        ),
+                  ),
+                );
               },
               child: Text(
                 'View full thread',
