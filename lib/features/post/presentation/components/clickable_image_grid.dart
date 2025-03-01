@@ -35,10 +35,7 @@ class ClickableImageGrid extends StatelessWidget {
         onTap: () => onImageTap(image, index),
         child: AspectRatio(
           aspectRatio: aspectRatio,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: _buildNetworkImage(image.fullsize),
-          ),
+          child: _buildNetworkImage(context, image.fullsize),
         ),
       ),
     );
@@ -60,32 +57,38 @@ class ClickableImageGrid extends StatelessWidget {
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () => onImageTap(images[index], index),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: _buildNetworkImage(images[index].fullsize),
-            ),
+            child: _buildNetworkImage(context, images[index].fullsize),
           );
         },
       ),
     );
   }
 
-  Widget _buildNetworkImage(String imageUrl) {
+  Widget _buildNetworkImage(BuildContext context, String imageUrl) {
     try {
       if (imageUrl.isEmpty) {
         return _buildErrorPlaceholder();
       }
 
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(child: CircularProgressIndicator());
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return _buildErrorPlaceholder();
-        },
+      return Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          borderRadius: BorderRadius.all(Radius.circular(8.0)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(child: CircularProgressIndicator());
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return _buildErrorPlaceholder();
+            },
+          ),
+        ),
       );
     } catch (e) {
       print('Error loading image: $e');
