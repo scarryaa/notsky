@@ -386,16 +386,20 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
           final data = reply.data;
           final postContent = RegularPost(data.post);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Stack(
             children: [
-              BasePostComponent(
-                postContent: postContent,
-                contentLabelPreferences: widget.contentLabelPreferences,
-                detailed: false,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BasePostComponent(
+                    postContent: postContent,
+                    contentLabelPreferences: widget.contentLabelPreferences,
+                    detailed: false,
+                  ),
+                  if (data.replies != null && data.replies!.isNotEmpty)
+                    _buildFlattenedReplies(data.replies!, 1),
+                ],
               ),
-              if (data.replies != null && data.replies!.isNotEmpty)
-                _buildFlattenedReplies(data.replies!, 1),
             ],
           );
         }
@@ -405,32 +409,48 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
   }
 
   Widget _buildFlattenedReplies(List<dynamic> replies, int indentLevel) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children:
-          replies.map((reply) {
-            if (reply.data is PostThreadViewRecord) {
-              final data = reply.data;
-              final postContent = RegularPost(data.post);
+    return Stack(
+      children: [
+        Positioned(
+          left: 8.0 * indentLevel,
+          top: 0,
+          bottom: 0,
+          width: 2,
+          child: Container(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children:
+              replies.map((reply) {
+                if (reply.data is PostThreadViewRecord) {
+                  final data = reply.data;
+                  final postContent = RegularPost(data.post);
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(left: 8.0 * indentLevel),
-                    child: BasePostComponent(
-                      postContent: postContent,
-                      contentLabelPreferences: widget.contentLabelPreferences,
-                      detailed: false,
-                    ),
-                  ),
-                  if (data.replies != null && data.replies!.isNotEmpty)
-                    _buildFlattenedReplies(data.replies!, indentLevel + 1),
-                ],
-              );
-            }
-            return SizedBox.shrink();
-          }).toList(),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(left: 8.0 * indentLevel),
+                        child: BasePostComponent(
+                          postContent: postContent,
+                          contentLabelPreferences:
+                              widget.contentLabelPreferences,
+                          detailed: false,
+                        ),
+                      ),
+                      if (data.replies != null && data.replies!.isNotEmpty)
+                        _buildFlattenedReplies(data.replies!, indentLevel + 1),
+                    ],
+                  );
+                }
+                return SizedBox.shrink();
+              }).toList(),
+        ),
+      ],
     );
   }
 
