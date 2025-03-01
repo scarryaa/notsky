@@ -685,6 +685,11 @@ class _PostComponentState extends State<PostComponent> {
 
     if (embed?.data is EmbedViewExternal) {
       final external = (embed!.data as EmbedViewExternal).external;
+      if (external.uri.contains('youtu.be') ||
+          external.uri.contains('youtube')) {
+        return SizedBox.shrink();
+      }
+
       return _buildExternalContent(external);
     }
 
