@@ -13,19 +13,23 @@ import 'package:notsky/features/thread/presentation/components/thread_component.
 class FeedComponent extends StatefulWidget {
   final bool isTimeline;
   final AtUri? generatorUri;
+  final ScrollController scrollController;
 
-  const FeedComponent({this.isTimeline = false, this.generatorUri, super.key})
-    : assert(
-        isTimeline || generatorUri != null,
-        'Either isTimeline must be true or generatorUri must be provided',
-      );
+  const FeedComponent({
+    this.isTimeline = false,
+    this.generatorUri,
+    super.key,
+    required this.scrollController,
+  }) : assert(
+         isTimeline || generatorUri != null,
+         'Either isTimeline must be true or generatorUri must be provided',
+       );
 
   @override
   State<FeedComponent> createState() => _FeedComponentState();
 }
 
 class _FeedComponentState extends State<FeedComponent> {
-  final ScrollController _scrollController = ScrollController();
   late FeedCubit _feedCubit;
 
   @override
@@ -35,14 +39,13 @@ class _FeedComponentState extends State<FeedComponent> {
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    widget.scrollController.removeListener(_onScroll);
     super.dispose();
   }
 
   void _onScroll() {
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
+    final maxScroll = widget.scrollController.position.maxScrollExtent;
+    final currentScroll = widget.scrollController.position.pixels;
     const delta = 200.0;
 
     if (maxScroll - currentScroll <= delta) {
@@ -61,7 +64,7 @@ class _FeedComponentState extends State<FeedComponent> {
             generatorUri: widget.isTimeline ? null : widget.generatorUri,
           );
 
-        _scrollController.addListener(_onScroll);
+        widget.scrollController.addListener(_onScroll);
 
         return _feedCubit;
       },
@@ -72,7 +75,7 @@ class _FeedComponentState extends State<FeedComponent> {
           } else if (state is FeedLoaded) {
             return RefreshIndicator(
               child: ListView.separated(
-                controller: _scrollController,
+                controller: widget.scrollController,
                 itemBuilder: (context, index) {
                   final feedItem = state.feeds.feed.elementAtOrNull(index);
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
@@ -17,11 +18,39 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late TabController _tabController;
   final timelineKey = GlobalKey();
+  late ScrollController _scrollController;
+  bool _isAppBarVisible = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 1, vsync: this);
+    _scrollController = ScrollController();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse) {
+      if (_isAppBarVisible) {
+        setState(() {
+          _isAppBarVisible = false;
+        });
+      }
+    } else if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.forward) {
+      if (!_isAppBarVisible) {
+        setState(() {
+          _isAppBarVisible = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -47,12 +76,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return BlocBuilder<FeedListCubit, FeedListState>(
       builder: (context, state) {
@@ -63,122 +86,140 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         final timelineComponent = FeedComponent(
           key: timelineKey,
           isTimeline: true,
+          scrollController: _scrollController,
         );
 
-        return Scaffold(
-          drawer: _buildDrawer(context),
-          appBar: PreferredSize(
-            preferredSize: Size(double.infinity, 90.0),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withValues(alpha: 0.25),
+        return SafeArea(
+          child: Scaffold(
+            drawer: _buildDrawer(context),
+            appBar: PreferredSize(
+              preferredSize: Size(double.infinity, 90.0),
+              child: AnimatedOpacity(
+                opacity: _isAppBarVisible ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 300),
+                child: AnimatedContainer(
+                  duration: Duration(milliseconds: 200),
+                  transform: Matrix4.translationValues(
+                    0,
+                    _isAppBarVisible ? 0.0 : -200.0,
+                    0,
                   ),
-                ),
-              ),
-              child: AppBar(
-                title: Text('Home'),
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                scrolledUnderElevation: 0,
-                bottom: PreferredSize(
-                  preferredSize: Size(double.infinity, 20.0),
-                  child: Builder(
-                    builder: (context) {
-                      if (state is FeedListLoaded &&
-                          state.feeds.feeds.isNotEmpty) {
-                        return TabBar(
-                          isScrollable: true,
-                          tabAlignment: TabAlignment.start,
-                          tabs: [
-                            Tab(text: 'Following', height: 32),
-                            ...state.feeds.feeds.map(
-                              (feed) => Tab(height: 32, text: feed.displayName),
-                            ),
-                          ],
-                          controller: _tabController,
-                        );
-                      }
-
-                      if (state is FeedListLoading) {
-                        return Container();
-                      } else if (state is FeedListError) {
-                        return Text(
-                          'An error occurred while loading feeds. ${state.message}',
-                        );
-                      } else {
-                        return Container();
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-          body:
-              state is FeedListLoaded && state.feeds.feeds.isNotEmpty
-                  ? TabBarView(
-                    controller: _tabController,
-                    children: [
-                      timelineComponent,
-                      ...state.feeds.feeds.map(
-                        (feed) => FeedComponent(generatorUri: feed.uri),
+                  height: _isAppBarVisible ? 150.0 : 0,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.25),
                       ),
-                    ],
-                  )
-                  : timelineComponent,
-          floatingActionButton: IconButton(
-            constraints: BoxConstraints(minWidth: 48.0, minHeight: 48.0),
-            onPressed: () {
-              showModalBottomSheet(
-                isScrollControlled: true,
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height - 250,
-                  maxHeight: MediaQuery.of(context).size.height - 250,
-                ),
-                context: context,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(12.0),
+                    ),
+                  ),
+                  child: AppBar(
+                    title: Text('Home'),
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    scrolledUnderElevation: 0,
+                    bottom: PreferredSize(
+                      preferredSize: Size(double.infinity, 20.0),
+                      child: Builder(
+                        builder: (context) {
+                          if (state is FeedListLoaded &&
+                              state.feeds.feeds.isNotEmpty) {
+                            return TabBar(
+                              isScrollable: true,
+                              tabAlignment: TabAlignment.start,
+                              tabs: [
+                                Tab(text: 'Following', height: 32),
+                                ...state.feeds.feeds.map(
+                                  (feed) =>
+                                      Tab(height: 32, text: feed.displayName),
+                                ),
+                              ],
+                              controller: _tabController,
+                            );
+                          }
+
+                          if (state is FeedListLoading) {
+                            return Container();
+                          } else if (state is FeedListError) {
+                            return Text(
+                              'An error occurred while loading feeds. ${state.message}',
+                            );
+                          } else {
+                            return Container();
+                          }
+                        },
+                      ),
+                    ),
                   ),
                 ),
-                builder: (context) {
-                  String? avatar;
-                  final authState = context.read<AuthCubit>().state;
-                  if (authState is AuthSuccess) {
-                    final profile = authState.profile;
-                    avatar = profile?.avatar;
-                  }
-
-                  return ReplyComponent(
-                    hideOrWarn: null,
-                    onCancel: () {
-                      Navigator.pop(context);
-                    },
-                    onReply: (String text) {
-                      final auth = context.read<AuthCubit>();
-                      final blueskyService = auth.getBlueskyService();
-
-                      blueskyService.post(text);
-                      Navigator.of(context).pop();
-                    },
-                    replyPost: null,
-                    userAvatar: avatar,
-                  );
-                },
-              );
-            },
-            style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(
-                Theme.of(context).colorScheme.primary,
-              ),
-              foregroundColor: WidgetStatePropertyAll(
-                Theme.of(context).colorScheme.onPrimary,
               ),
             ),
-            icon: Icon(Icons.edit_square, size: 22.0),
+            body:
+                state is FeedListLoaded && state.feeds.feeds.isNotEmpty
+                    ? TabBarView(
+                      controller: _tabController,
+                      children: [
+                        timelineComponent,
+                        ...state.feeds.feeds.map(
+                          (feed) => FeedComponent(
+                            generatorUri: feed.uri,
+                            scrollController: _scrollController,
+                          ),
+                        ),
+                      ],
+                    )
+                    : timelineComponent,
+            floatingActionButton: IconButton(
+              constraints: BoxConstraints(minWidth: 48.0, minHeight: 48.0),
+              onPressed: () {
+                showModalBottomSheet(
+                  isScrollControlled: true,
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.of(context).size.height - 250,
+                    maxHeight: MediaQuery.of(context).size.height - 250,
+                  ),
+                  context: context,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(12.0),
+                    ),
+                  ),
+                  builder: (context) {
+                    String? avatar;
+                    final authState = context.read<AuthCubit>().state;
+                    if (authState is AuthSuccess) {
+                      final profile = authState.profile;
+                      avatar = profile?.avatar;
+                    }
+
+                    return ReplyComponent(
+                      hideOrWarn: null,
+                      onCancel: () {
+                        Navigator.pop(context);
+                      },
+                      onReply: (String text) {
+                        final auth = context.read<AuthCubit>();
+                        final blueskyService = auth.getBlueskyService();
+
+                        blueskyService.post(text);
+                        Navigator.of(context).pop();
+                      },
+                      replyPost: null,
+                      userAvatar: avatar,
+                    );
+                  },
+                );
+              },
+              style: ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(
+                  Theme.of(context).colorScheme.primary,
+                ),
+                foregroundColor: WidgetStatePropertyAll(
+                  Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+              icon: Icon(Icons.edit_square, size: 22.0),
+            ),
           ),
         );
       },
