@@ -51,8 +51,8 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
   }
 
   @override
-  void didPopNext() {
-    _initializeThread();
+  Future<void> didPopNext() async {
+    await _initializeThread();
     if (_savedScrollPosition != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
@@ -69,7 +69,7 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
     }
   }
 
-  void _initializeThread() {
+  Future<void> _initializeThread() async {
     _postCubit.initializePost(
       widget.post.uri.toString(),
       widget.post.viewer.isLiked,
@@ -79,7 +79,7 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
       widget.post.likeCount,
       widget.post.repostCount + widget.post.quoteCount,
     );
-    _postCubit.getThread(widget.post.uri);
+    await _postCubit.getThread(widget.post.uri);
   }
 
   @override
