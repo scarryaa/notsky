@@ -1,6 +1,5 @@
 import 'package:atproto_core/atproto_core.dart';
 import 'package:bluesky/bluesky.dart';
-import 'package:flutter/cupertino.dart';
 
 enum PostActionType { none, like, unlike, repost, unrepost, reply }
 

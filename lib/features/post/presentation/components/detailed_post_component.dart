@@ -47,7 +47,7 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
       widget.post.viewer.isReposted,
       widget.post.viewer.repost,
       widget.post.likeCount,
-      widget.post.repostCount + widget.post.quoteCount,
+      widget.post.repostCount,
     );
 
     context.read<PostCubit>().getThread(widget.post.uri);
