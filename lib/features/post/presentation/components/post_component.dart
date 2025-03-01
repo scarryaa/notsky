@@ -15,6 +15,7 @@ import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PostComponent extends StatefulWidget {
   const PostComponent({
@@ -315,6 +316,207 @@ class _PostComponentState extends State<PostComponent> {
     );
   }
 
+  Widget _buildQuotedPost() {
+    final embed = widget.post.embed;
+
+    if (embed?.data is EmbedViewRecordWithMedia) {
+      final recordWithMedia = embed!.data as EmbedViewRecordWithMedia;
+      final quoteEmbed = recordWithMedia.record;
+
+      final quotedRecord =
+          (quoteEmbed.record).data as EmbedViewRecordViewRecord;
+      return _buildQuotePostView(quotedRecord);
+    } else if (embed?.data is EmbedViewRecord) {
+      final quoteEmbed = embed!.data as EmbedViewRecord;
+
+      final quotedRecord =
+          (quoteEmbed.record).data as EmbedViewRecordViewRecord;
+      return _buildQuotePostView(quotedRecord);
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildQuotePostView(EmbedViewRecordViewRecord quotedPost) {
+    return InkWell(
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      onTap: () {
+        final auth = context.read<AuthCubit>();
+        final blueskyService = auth.getBlueskyService();
+
+        blueskyService.getPost(quotedPost.uri).then((fetchedPost) {
+          if (fetchedPost != null) {
+            Navigator.of(context).push(
+              NoBackgroundCupertinoPageRoute(
+                builder:
+                    (context) => PostDetailPage(
+                      post: fetchedPost,
+                      reply: null,
+                      reason: null,
+                      contentLabelPreferences: widget.contentLabelPreferences,
+                    ),
+              ),
+            );
+          }
+        });
+      },
+      child: Container(
+        margin: EdgeInsets.only(top: 8.0),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  AvatarComponent(avatar: quotedPost.author.avatar, size: 20.0),
+                  SizedBox(width: 8.0),
+                  Flexible(
+                    child: Text(
+                      quotedPost.author.displayName ?? '',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  SizedBox(width: 4.0),
+                  Flexible(
+                    child: Text(
+                      '@${quotedPost.author.handle}',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 4.0),
+              Text(quotedPost.value.text),
+              _buildQuotedPostMedia(quotedPost),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuotedPostMedia(EmbedViewRecordViewRecord quotedPost) {
+    if (quotedPost.embeds != null) {
+      for (final embed in quotedPost.embeds!) {
+        if (embed.data is EmbedViewImages) {
+          final imageEmbed = embed.data as EmbedViewImages;
+          return ClickableImageGrid(
+            images: imageEmbed.images,
+            onImageTap: (image, index) {
+              final navController = Provider.of<BottomNavVisibilityController>(
+                context,
+                listen: false,
+              );
+              navController.hide();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder:
+                      (context) => ImageDetailScreen(
+                        images: imageEmbed.images,
+                        initialIndex: index,
+                        onExit: () {
+                          navController.show();
+                        },
+                      ),
+                ),
+              );
+            },
+          );
+        } else if (embed.data is EmbedViewRecordWithMedia) {
+          final recordWithMediaEmbed = embed.data as EmbedViewRecordWithMedia;
+
+          if (recordWithMediaEmbed.media.data is EmbedViewImages) {
+            final imageEmbed =
+                recordWithMediaEmbed.media.data as EmbedViewImages;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildQuotedRecord(recordWithMediaEmbed.record),
+
+                ClickableImageGrid(
+                  images: imageEmbed.images,
+                  onImageTap: (image, index) {
+                    final navController =
+                        Provider.of<BottomNavVisibilityController>(
+                          context,
+                          listen: false,
+                        );
+                    navController.hide();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            (context) => ImageDetailScreen(
+                              images: imageEmbed.images,
+                              initialIndex: index,
+                              onExit: () {
+                                navController.show();
+                              },
+                            ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          }
+        }
+      }
+    }
+
+    return SizedBox.shrink();
+  }
+
+  Widget _buildQuotedRecord(EmbedViewRecord record) {
+    if (record.record is EmbedViewRecordViewRecord) {
+      final recordData = record.record as EmbedViewRecordViewRecord;
+      return Container(
+        padding: EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (recordData.author.avatar != null)
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(recordData.author.avatar!),
+                    radius: 16,
+                  ),
+                SizedBox(width: 8),
+                Text(
+                  recordData.author.displayName ?? recordData.author.handle,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+
+            Text(recordData.value.text),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox.shrink();
+  }
+
   Widget _buildDisplayName() {
     return Flexible(
       flex: 1,
@@ -472,7 +674,106 @@ class _PostComponentState extends State<PostComponent> {
           )
         else
           _buildMediaContent(),
+        _buildExternal(),
+        _buildQuotedPost(),
       ],
+    );
+  }
+
+  Widget _buildExternal() {
+    final embed = widget.post.embed;
+
+    if (embed?.data is EmbedViewExternal) {
+      final external = (embed!.data as EmbedViewExternal).external;
+      return _buildExternalContent(external);
+    }
+
+    if (embed?.data is EmbedViewRecordWithMedia) {
+      final recordWithMedia = embed!.data as EmbedViewRecordWithMedia;
+      if (recordWithMedia.media.data is EmbedViewExternal) {
+        final external = recordWithMedia.media.data as EmbedViewExternal;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [_buildExternalContent(external.external)],
+        );
+      }
+    }
+
+    return SizedBox.shrink();
+  }
+
+  Widget _buildExternalContent(EmbedViewExternalView external) {
+    return InkWell(
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      onTap: () {
+        launchUrl(Uri.parse(external.uri));
+      },
+      child: Container(
+        margin: EdgeInsets.only(top: 8.0),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (external.thumbnail != null)
+              ClipRRect(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(7.0)),
+                child: Image.network(
+                  external.thumbnail!,
+                  width: double.infinity,
+                  height: 150,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    external.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.0,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      external.description,
+                      style: TextStyle(
+                        fontSize: 12.0,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      Uri.parse(external.uri).host,
+                      style: TextStyle(
+                        fontSize: 12.0,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -489,36 +790,73 @@ class _PostComponentState extends State<PostComponent> {
 
   Widget _buildImageGrid() {
     final embed = widget.post.embed;
-    if (embed == null || embed.data is! EmbedViewImages) {
+    if (embed == null ||
+        embed.data is! EmbedViewImages &&
+            embed.data is! EmbedViewRecordWithMedia) {
       return const SizedBox.shrink();
     }
 
-    final imageEmbed = embed.data as EmbedViewImages;
-    final images = imageEmbed.images;
+    if (embed.data is EmbedViewImages) {
+      final imageEmbed = embed.data as EmbedViewImages;
+      final images = imageEmbed.images;
 
-    return ClickableImageGrid(
-      images: images,
-      onImageTap: (image, index) {
-        final navController = Provider.of<BottomNavVisibilityController>(
-          context,
-          listen: false,
-        );
-        navController.hide();
+      return ClickableImageGrid(
+        images: images,
+        onImageTap: (image, index) {
+          final navController = Provider.of<BottomNavVisibilityController>(
+            context,
+            listen: false,
+          );
+          navController.hide();
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder:
+                  (context) => ImageDetailScreen(
+                    images: images,
+                    initialIndex: index,
+                    onExit: () {
+                      navController.show();
+                    },
+                  ),
+            ),
+          );
+        },
+      );
+    } else if (embed.data is EmbedViewRecordWithMedia) {
+      final recordWithMedia = embed.data as EmbedViewRecordWithMedia;
 
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder:
-                (context) => ImageDetailScreen(
-                  images: images,
-                  initialIndex: index,
-                  onExit: () {
-                    navController.show();
-                  },
-                ),
-          ),
+      if (recordWithMedia.media.data is EmbedViewImages) {
+        final imageEmbed = recordWithMedia.media.data as EmbedViewImages;
+        final images = imageEmbed.images;
+
+        return ClickableImageGrid(
+          images: images,
+          onImageTap: (image, index) {
+            final navController = Provider.of<BottomNavVisibilityController>(
+              context,
+              listen: false,
+            );
+            navController.hide();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder:
+                    (context) => ImageDetailScreen(
+                      images: images,
+                      initialIndex: index,
+                      onExit: () {
+                        navController.show();
+                      },
+                    ),
+              ),
+            );
+          },
         );
-      },
-    );
+      } else {
+        return SizedBox.shrink();
+      }
+    } else {
+      return SizedBox.shrink();
+    }
   }
 
   String getRelativeTime(DateTime dateTime) {

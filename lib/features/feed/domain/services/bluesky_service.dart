@@ -20,6 +20,7 @@ abstract class BlueskyService {
   });
 
   Future<PostThread> getThread(AtUri uri, {int depth = 10});
+  Future<Post?> getPost(AtUri uri);
 
   Future<FeedGenerators> getFeeds();
   Future<List<ContentLabelPreference>> getContentPreferences();

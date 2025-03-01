@@ -14,6 +14,24 @@ class BlueskyServiceImpl implements BlueskyService {
     : _bluesky = Bluesky.fromSession(session);
 
   @override
+  Future<Post?> getPost(AtUri uri) async {
+    try {
+      final thread = await _bluesky.feed.getPostThread(uri: uri, depth: 0);
+      final threadViewPost = thread.data.thread;
+      return (threadViewPost.data as PostThreadViewRecord).post;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+          return getPost(uri);
+        }
+      }
+      return null;
+    }
+  }
+
+  @override
   Future<Feed> getTimeline({
     Map<String, String>? headers,
     String? cursor,
