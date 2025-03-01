@@ -20,6 +20,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final timelineKey = GlobalKey();
   late ScrollController _scrollController;
   bool _isAppBarVisible = true;
+  bool _showScrollTopButton = false;
 
   @override
   void initState() {
@@ -42,6 +43,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (!_isAppBarVisible) {
         setState(() {
           _isAppBarVisible = true;
+        });
+      }
+    }
+
+    if (_scrollController.offset > 100.0) {
+      if (!_showScrollTopButton) {
+        setState(() {
+          _showScrollTopButton = true;
+        });
+      }
+    } else {
+      if (_showScrollTopButton) {
+        setState(() {
+          _showScrollTopButton = false;
         });
       }
     }
@@ -154,7 +169,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            body:
+            body: Stack(
+              children: [
                 state is FeedListLoaded && state.feeds.feeds.isNotEmpty
                     ? TabBarView(
                       controller: _tabController,
@@ -169,56 +185,89 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       ],
                     )
                     : timelineComponent,
-            floatingActionButton: IconButton(
-              constraints: BoxConstraints(minWidth: 48.0, minHeight: 48.0),
-              onPressed: () {
-                showModalBottomSheet(
-                  isScrollControlled: true,
-                  constraints: BoxConstraints(
-                    minHeight: MediaQuery.of(context).size.height - 250,
-                    maxHeight: MediaQuery.of(context).size.height - 250,
-                  ),
-                  context: context,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(12.0),
+                _showScrollTopButton
+                    ? Positioned(
+                      left: 16,
+                      bottom: 16,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          _scrollController.animateTo(
+                            0,
+                            duration: Duration(milliseconds: 500),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: CircleBorder(),
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          padding: EdgeInsets.all(14),
+                        ),
+                        child: Icon(Icons.arrow_upward_rounded),
+                      ),
+                    )
+                    : SizedBox.shrink(),
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: IconButton(
+                    constraints: BoxConstraints(
+                      minWidth: 48.0,
+                      minHeight: 48.0,
                     ),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        isScrollControlled: true,
+                        constraints: BoxConstraints(
+                          minHeight: MediaQuery.of(context).size.height - 250,
+                          maxHeight: MediaQuery.of(context).size.height - 250,
+                        ),
+                        context: context,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(12.0),
+                          ),
+                        ),
+                        builder: (context) {
+                          String? avatar;
+                          final authState = context.read<AuthCubit>().state;
+                          if (authState is AuthSuccess) {
+                            final profile = authState.profile;
+                            avatar = profile?.avatar;
+                          }
+
+                          return ReplyComponent(
+                            hideOrWarn: null,
+                            onCancel: () {
+                              Navigator.pop(context);
+                            },
+                            onReply: (String text) {
+                              final auth = context.read<AuthCubit>();
+                              final blueskyService = auth.getBlueskyService();
+
+                              blueskyService.post(text);
+                              Navigator.of(context).pop();
+                            },
+                            replyPost: null,
+                            userAvatar: avatar,
+                          );
+                        },
+                      );
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStatePropertyAll(
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                      foregroundColor: WidgetStatePropertyAll(
+                        Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                    icon: Icon(Icons.edit_square, size: 22.0),
                   ),
-                  builder: (context) {
-                    String? avatar;
-                    final authState = context.read<AuthCubit>().state;
-                    if (authState is AuthSuccess) {
-                      final profile = authState.profile;
-                      avatar = profile?.avatar;
-                    }
-
-                    return ReplyComponent(
-                      hideOrWarn: null,
-                      onCancel: () {
-                        Navigator.pop(context);
-                      },
-                      onReply: (String text) {
-                        final auth = context.read<AuthCubit>();
-                        final blueskyService = auth.getBlueskyService();
-
-                        blueskyService.post(text);
-                        Navigator.of(context).pop();
-                      },
-                      replyPost: null,
-                      userAvatar: avatar,
-                    );
-                  },
-                );
-              },
-              style: ButtonStyle(
-                backgroundColor: WidgetStatePropertyAll(
-                  Theme.of(context).colorScheme.primary,
                 ),
-                foregroundColor: WidgetStatePropertyAll(
-                  Theme.of(context).colorScheme.onPrimary,
-                ),
-              ),
-              icon: Icon(Icons.edit_square, size: 22.0),
+              ],
             ),
           ),
         );
