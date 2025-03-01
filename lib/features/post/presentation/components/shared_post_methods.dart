@@ -88,10 +88,12 @@ class SharedPostMethods {
 
   static Widget buildGifOrYoutubeVideo(Post post) {
     final record = post.record;
-    if (record.embed == null || record.embed?.data is! EmbedExternal) {
+    if (record.embed?.data is! EmbedExternal ||
+        post.embed?.data is! EmbedViewExternal) {
       return const SizedBox.shrink();
     }
-    final embedExternal = record.embed!.data as EmbedExternal;
+    final embedExternal =
+        (record.embed?.data ?? post.embed?.data) as EmbedExternal;
     final url = embedExternal.external.uri;
 
     if (url.contains('youtube.com') || url.contains('youtu.be')) {
@@ -129,7 +131,7 @@ class SharedPostMethods {
     ];
     final lowercaseUrl = url.toLowerCase();
 
-    if (!imageExtensions.any((ext) => lowercaseUrl.endsWith(ext))) {
+    if (!imageExtensions.any((ext) => lowercaseUrl.contains(ext))) {
       return SizedBox.shrink();
     }
 
