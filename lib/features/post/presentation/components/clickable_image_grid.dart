@@ -20,7 +20,46 @@ class ClickableImageGrid extends StatelessWidget {
       return _buildSingleImage(context, images[0], 0);
     }
 
+    if (images.length == 3) {
+      return _buildThreeImagesLayout(context);
+    }
+
     return _buildImageGrid(context);
+  }
+
+  Widget _buildThreeImagesLayout(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Column(
+        children: [
+          _buildSingleImage(context, images[0], 0),
+          const SizedBox(height: 4.0),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => onImageTap(images[1], 1),
+                  child: AspectRatio(
+                    aspectRatio: 1.0,
+                    child: _buildNetworkImage(context, images[1].fullsize),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4.0),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => onImageTap(images[2], 2),
+                  child: AspectRatio(
+                    aspectRatio: 1.0,
+                    child: _buildNetworkImage(context, images[2].fullsize),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSingleImage(BuildContext context, dynamic image, int index) {

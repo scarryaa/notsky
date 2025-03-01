@@ -207,61 +207,63 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           drawer: _buildDrawer(context),
           appBar: PreferredSize(
             preferredSize: Size(double.infinity, 90.0),
-            child: SafeArea(
-              child: AnimatedOpacity(
-                opacity: _isAppBarVisible ? 1.0 : 0.0,
-                duration: Duration(milliseconds: 300),
-                child: AnimatedContainer(
-                  duration: Duration(milliseconds: 200),
-                  transform: Matrix4.translationValues(
-                    0,
-                    _isAppBarVisible ? 0.0 : -200.0,
-                    0,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.25),
                   ),
-                  height: _isAppBarVisible ? 150.0 : 0,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.25),
-                      ),
+                ),
+              ),
+              child: SafeArea(
+                child: AnimatedOpacity(
+                  opacity: _isAppBarVisible ? 1.0 : 0.0,
+                  duration: Duration(milliseconds: 300),
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 200),
+                    transform: Matrix4.translationValues(
+                      0,
+                      _isAppBarVisible ? 0.0 : -200.0,
+                      0,
                     ),
-                  ),
-                  child: AppBar(
-                    title: Text('Home'),
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    scrolledUnderElevation: 0,
-                    bottom: PreferredSize(
-                      preferredSize: Size(double.infinity, 20.0),
-                      child: Builder(
-                        builder: (context) {
-                          if (state is FeedListLoaded &&
-                              state.feeds.feeds.isNotEmpty) {
-                            return TabBar(
-                              isScrollable: true,
-                              tabAlignment: TabAlignment.start,
-                              tabs: [
-                                Tab(text: 'Following', height: 32),
-                                ...state.feeds.feeds.map(
-                                  (feed) =>
-                                      Tab(height: 32, text: feed.displayName),
-                                ),
-                              ],
-                              controller: _tabController,
-                            );
-                          }
+                    height: _isAppBarVisible ? 150.0 : 0,
+                    child: AppBar(
+                      title: Text('Home'),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      scrolledUnderElevation: 0,
+                      bottom: PreferredSize(
+                        preferredSize: Size(double.infinity, 20.0),
+                        child: Builder(
+                          builder: (context) {
+                            if (state is FeedListLoaded &&
+                                state.feeds.feeds.isNotEmpty) {
+                              return TabBar(
+                                isScrollable: true,
+                                tabAlignment: TabAlignment.start,
+                                tabs: [
+                                  Tab(text: 'Following', height: 32),
+                                  ...state.feeds.feeds.map(
+                                    (feed) =>
+                                        Tab(height: 32, text: feed.displayName),
+                                  ),
+                                ],
+                                controller: _tabController,
+                              );
+                            }
 
-                          if (state is FeedListLoading) {
-                            return Container();
-                          } else if (state is FeedListError) {
-                            return Text(
-                              'An error occurred while loading feeds. ${state.message}',
-                            );
-                          } else {
-                            return Container();
-                          }
-                        },
+                            if (state is FeedListLoading) {
+                              return Container();
+                            } else if (state is FeedListError) {
+                              return Text(
+                                'An error occurred while loading feeds. ${state.message}',
+                              );
+                            } else {
+                              return Container();
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ),
