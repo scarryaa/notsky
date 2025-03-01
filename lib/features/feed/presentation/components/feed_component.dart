@@ -14,23 +14,45 @@ class FeedComponent extends StatefulWidget {
   final bool isTimeline;
   final AtUri? generatorUri;
   final ScrollController scrollController;
+  final VoidCallback? onRefresh;
 
   const FeedComponent({
     this.isTimeline = false,
     this.generatorUri,
     super.key,
     required this.scrollController,
+    this.onRefresh,
   }) : assert(
          isTimeline || generatorUri != null,
          'Either isTimeline must be true or generatorUri must be provided',
        );
 
   @override
-  State<FeedComponent> createState() => _FeedComponentState();
+  State<FeedComponent> createState() => FeedComponentState();
 }
 
-class _FeedComponentState extends State<FeedComponent> {
+class FeedComponentState extends State<FeedComponent> {
   late FeedCubit _feedCubit;
+
+  String? getLatestPostId() {
+    final state = _feedCubit.state;
+    if (state is FeedLoaded && state.feeds.feed.isNotEmpty) {
+      return state.feeds.feed.first.post.cid.toString();
+    }
+    return null;
+  }
+
+  void refreshFeed() {
+    if (mounted) {
+      _feedCubit.loadFeed(
+        generatorUri: widget.isTimeline ? null : widget.generatorUri,
+      );
+
+      if (widget.onRefresh != null) {
+        widget.onRefresh!();
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -135,6 +157,10 @@ class _FeedComponentState extends State<FeedComponent> {
                     ),
               ),
               onRefresh: () {
+                if (widget.onRefresh != null) {
+                  widget.onRefresh!();
+                }
+
                 return context.read<FeedCubit>().loadFeed(
                   generatorUri: widget.isTimeline ? null : widget.generatorUri,
                 );
@@ -144,6 +170,10 @@ class _FeedComponentState extends State<FeedComponent> {
             return RefreshIndicator(
               child: Center(child: Text('Error: ${state.message}')),
               onRefresh: () {
+                if (widget.onRefresh != null) {
+                  widget.onRefresh!();
+                }
+
                 return context.read<FeedCubit>().loadFeed(
                   generatorUri: widget.isTimeline ? null : widget.generatorUri,
                 );
@@ -152,6 +182,10 @@ class _FeedComponentState extends State<FeedComponent> {
           }
           return RefreshIndicator(
             onRefresh: () {
+              if (widget.onRefresh != null) {
+                widget.onRefresh!();
+              }
+
               return context.read<FeedCubit>().loadFeed(
                 generatorUri: widget.isTimeline ? null : widget.generatorUri,
               );

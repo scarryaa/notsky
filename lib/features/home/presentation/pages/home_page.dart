@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:atproto_core/atproto_core.dart';
+import 'package:bluesky/bluesky.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +12,9 @@ import 'package:notsky/features/home/presentation/cubits/feed_list_cubit.dart';
 import 'package:notsky/features/home/presentation/cubits/feed_list_state.dart';
 import 'package:notsky/features/post/presentation/components/reply_component.dart';
 
+final GlobalKey<FeedComponentState> _feedComponentKey =
+    GlobalKey<FeedComponentState>();
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -17,10 +24,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late TabController _tabController;
-  final timelineKey = GlobalKey();
   late ScrollController _scrollController;
   bool _isAppBarVisible = true;
   bool _showScrollTopButton = false;
+  bool _hasNewPosts = false;
+  Timer? _checkNewPostsTimer;
+  String? _lastPostId;
 
   @override
   void initState() {
@@ -28,6 +37,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _tabController = TabController(length: 1, vsync: this);
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
+
+    _startNewPostsChecker();
   }
 
   void _scrollListener() {
@@ -64,8 +75,84 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _checkNewPostsTimer?.cancel();
     _tabController.dispose();
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _resetNewPostsIndicator() {
+    setState(() {
+      _hasNewPosts = false;
+    });
+  }
+
+  void _startNewPostsChecker() {
+    _checkNewPostsTimer = Timer.periodic(Duration(minutes: 1), (_) {
+      _checkForNewPosts();
+    });
+  }
+
+  Future<void> _checkForNewPosts() async {
+    if (!mounted || _tabController.index != 0) return;
+
+    final currentTabIndex = _tabController.index;
+    final isTimelineTab = currentTabIndex == 0;
+    AtUri? generatorUri;
+
+    final state = context.read<FeedListCubit>().state;
+    if (state is FeedListLoaded &&
+        !isTimelineTab &&
+        currentTabIndex - 1 < state.feeds.feeds.length) {
+      generatorUri = state.feeds.feeds[currentTabIndex - 1].uri;
+    }
+
+    try {
+      final authCubit = context.read<AuthCubit>();
+      final blueskyService = authCubit.getBlueskyService();
+
+      final Feed latestFeed =
+          isTimelineTab
+              ? await blueskyService.getTimeline(limit: 1)
+              : await blueskyService.getFeed(
+                generatorUri: generatorUri!,
+                limit: 1,
+              );
+
+      if (latestFeed.feed.isNotEmpty) {
+        final latestPostId = latestFeed.feed.first.post.cid.toString();
+
+        if (_lastPostId != null && _lastPostId != latestPostId) {
+          setState(() {
+            _hasNewPosts = true;
+          });
+        }
+
+        _lastPostId = latestPostId;
+      }
+    } catch (e) {
+      print('Error checking for new posts: $e');
+    }
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+
+    if (_hasNewPosts && _tabController.index == 0) {
+      Future.delayed(Duration(milliseconds: 500), () {
+        _feedComponentKey.currentState?.refreshFeed();
+      });
+    }
+
+    setState(() {
+      _hasNewPosts = false;
+      _showScrollTopButton = false;
+    });
   }
 
   @override
@@ -84,6 +171,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       _tabController.dispose();
       _tabController = TabController(length: length, vsync: this);
 
+      _tabController.addListener(() {
+        if (_hasNewPosts) {
+          setState(() {
+            _hasNewPosts = false;
+          });
+        }
+
+        _lastPostId = null;
+        _checkForNewPosts();
+      });
+
       if (previousIndex < length) {
         _tabController.index = previousIndex;
       }
@@ -99,9 +197,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         }
 
         final timelineComponent = FeedComponent(
-          key: timelineKey,
+          key: _feedComponentKey,
           isTimeline: true,
           scrollController: _scrollController,
+          onRefresh: _resetNewPostsIndicator,
         );
 
         return SafeArea(
@@ -175,11 +274,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ? TabBarView(
                       controller: _tabController,
                       children: [
-                        timelineComponent,
+                        FeedComponent(
+                          key: _feedComponentKey,
+                          isTimeline: true,
+                          scrollController: _scrollController,
+                          onRefresh: _resetNewPostsIndicator,
+                        ),
                         ...state.feeds.feeds.map(
                           (feed) => FeedComponent(
+                            key: ValueKey(feed.uri.toString()),
                             generatorUri: feed.uri,
                             scrollController: _scrollController,
+                            onRefresh: _resetNewPostsIndicator,
                           ),
                         ),
                       ],
@@ -189,23 +295,39 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ? Positioned(
                       left: 16,
                       bottom: 16,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          _scrollController.animateTo(
-                            0,
-                            duration: Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          shape: CircleBorder(),
-                          side: BorderSide(
-                            color: Theme.of(context).colorScheme.primary,
+                      child: Stack(
+                        children: [
+                          OutlinedButton(
+                            onPressed: _scrollToTop,
+                            style: OutlinedButton.styleFrom(
+                              elevation: 1.0,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.surface,
+                              shape: CircleBorder(),
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                              padding: EdgeInsets.all(14),
+                            ),
+                            child: Icon(Icons.arrow_upward_rounded),
                           ),
-                          padding: EdgeInsets.all(14),
-                        ),
-                        child: Icon(Icons.arrow_upward_rounded),
+                          if (_hasNewPosts)
+                            Positioned(
+                              right: 8,
+                              top: 4,
+                              child: Container(
+                                padding: EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: BoxConstraints(
+                                  minWidth: 12,
+                                  minHeight: 12,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     )
                     : SizedBox.shrink(),
@@ -257,6 +379,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       );
                     },
                     style: ButtonStyle(
+                      elevation: WidgetStatePropertyAll(1.0),
                       backgroundColor: WidgetStatePropertyAll(
                         Theme.of(context).colorScheme.primary,
                       ),
