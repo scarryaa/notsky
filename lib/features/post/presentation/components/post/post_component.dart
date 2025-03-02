@@ -442,11 +442,23 @@ class _PostComponentState extends State<PostComponent> {
       final recordWithMedia = embed!.data as EmbedViewRecordWithMedia;
       final quoteEmbed = recordWithMedia.record;
 
+      if ((quoteEmbed.record).data is EmbedViewRecordViewBlocked) {
+        return _buildQuoteBlockedView();
+      } else if ((quoteEmbed.record).data is EmbedViewRecordViewNotFound) {
+        return _buildQuoteDeletedView();
+      }
+
       final quotedRecord =
           (quoteEmbed.record).data as EmbedViewRecordViewRecord;
       return _buildQuotePostView(quotedRecord);
     } else if (embed?.data is EmbedViewRecord) {
       final quoteEmbed = embed!.data as EmbedViewRecord;
+
+      if ((quoteEmbed.record).data is EmbedViewRecordViewBlocked) {
+        return _buildQuoteBlockedView();
+      } else if ((quoteEmbed.record).data is EmbedViewRecordViewNotFound) {
+        return _buildQuoteDeletedView();
+      }
 
       final quotedRecord =
           (quoteEmbed.record).data as EmbedViewRecordViewRecord;
@@ -454,6 +466,46 @@ class _PostComponentState extends State<PostComponent> {
     }
 
     return const SizedBox.shrink();
+  }
+
+  Widget _buildQuoteDeletedView() {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 8.0),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.25),
+        ),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Row(
+          spacing: 4.0,
+          children: [Icon(Icons.info_outline, size: 16.0), Text('Deleted')],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuoteBlockedView() {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 8.0),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.25),
+        ),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Row(
+          spacing: 4.0,
+          children: [Icon(Icons.info_outline, size: 16.0), Text('Blocked')],
+        ),
+      ),
+    );
   }
 
   Widget _buildQuotePostView(EmbedViewRecordViewRecord quotedPost) {
