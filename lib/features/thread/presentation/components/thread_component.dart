@@ -2,7 +2,7 @@ import 'package:bluesky/bluesky.dart';
 import 'package:flutter/material.dart';
 import 'package:notsky/features/feed/presentation/components/dashed_line_painter.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
-import 'package:notsky/features/post/presentation/components/base_post_component.dart';
+import 'package:notsky/features/post/presentation/components/post/base_post_component.dart';
 import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
 

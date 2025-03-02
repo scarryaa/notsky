@@ -256,7 +256,7 @@ class PostCubit extends Cubit<PostState> {
         }
       }
     } catch (e) {
-      print(e.toString());
+      print('ddd' + e.toString());
       final errorState = state.copyWith(
         actionStatus: PostActionStatus.failure,
         error: e.toString(),

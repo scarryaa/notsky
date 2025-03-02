@@ -8,13 +8,13 @@ import 'package:intl/intl.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
-import 'package:notsky/features/post/presentation/components/avatar_component.dart';
-import 'package:notsky/features/post/presentation/components/base_post_component.dart';
-import 'package:notsky/features/post/presentation/components/clickable_image_grid.dart';
-import 'package:notsky/features/post/presentation/components/image_detail_screen.dart';
-import 'package:notsky/features/post/presentation/components/post_actions_component.dart';
-import 'package:notsky/features/post/presentation/components/reply_component.dart';
-import 'package:notsky/features/post/presentation/components/shared_post_methods.dart';
+import 'package:notsky/features/post/presentation/components/common/avatar_component.dart';
+import 'package:notsky/features/post/presentation/components/interaction/post_actions_component.dart';
+import 'package:notsky/features/post/presentation/components/interaction/reply_component.dart';
+import 'package:notsky/features/post/presentation/components/media/clickable_image_grid.dart';
+import 'package:notsky/features/post/presentation/components/media/image_detail_screen.dart';
+import 'package:notsky/features/post/presentation/components/post/base_post_component.dart';
+import 'package:notsky/features/post/presentation/components/post/shared_post_methods.dart';
 import 'package:notsky/features/post/presentation/controllers/bottom_nav_visibility_controller.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
@@ -59,7 +59,6 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
 
   @override
   Widget build(BuildContext context) {
-    print(widget.post.record.facets);
     return BlocBuilder<PostCubit, PostState>(
       builder:
           (context, state) => Column(

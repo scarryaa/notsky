@@ -1,7 +1,7 @@
 import 'package:bluesky/app_bsky_embed_video.dart';
 import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
-import 'package:notsky/features/post/presentation/components/video_component.dart';
+import 'package:notsky/features/post/presentation/components/media/video_component.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class SharedPostMethods {

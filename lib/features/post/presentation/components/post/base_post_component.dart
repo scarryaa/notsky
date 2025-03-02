@@ -3,10 +3,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
-import 'package:notsky/features/post/presentation/components/blocked_post_component.dart';
-import 'package:notsky/features/post/presentation/components/detailed_post_component.dart';
-import 'package:notsky/features/post/presentation/components/not_found_post_component.dart';
-import 'package:notsky/features/post/presentation/components/post_component.dart';
+import 'package:notsky/features/post/presentation/components/post/blocked_post_component.dart';
+import 'package:notsky/features/post/presentation/components/post/detailed_post_component.dart';
+import 'package:notsky/features/post/presentation/components/post/not_found_post_component.dart';
+import 'package:notsky/features/post/presentation/components/post/post_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 
 class BasePostComponent extends StatelessWidget {

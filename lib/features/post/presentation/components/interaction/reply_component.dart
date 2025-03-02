@@ -1,7 +1,7 @@
 import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
-import 'package:notsky/features/post/presentation/components/avatar_component.dart';
-import 'package:notsky/features/post/presentation/components/character_count_painter.dart';
+import 'package:notsky/features/post/presentation/components/common/avatar_component.dart';
+import 'package:notsky/features/post/presentation/components/common/character_count_painter.dart';
 
 class ReplyComponent extends StatefulWidget {
   const ReplyComponent({

@@ -10,7 +10,7 @@ import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/feed/presentation/components/feed_component.dart';
 import 'package:notsky/features/home/presentation/cubits/feed_list_cubit.dart';
 import 'package:notsky/features/home/presentation/cubits/feed_list_state.dart';
-import 'package:notsky/features/post/presentation/components/reply_component.dart';
+import 'package:notsky/features/post/presentation/components/interaction/reply_component.dart';
 
 final GlobalKey<FeedComponentState> _feedComponentKey =
     GlobalKey<FeedComponentState>();

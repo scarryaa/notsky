@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
-import 'package:notsky/features/post/presentation/components/base_post_component.dart';
+import 'package:notsky/features/post/presentation/components/post/base_post_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/main.dart';
 
