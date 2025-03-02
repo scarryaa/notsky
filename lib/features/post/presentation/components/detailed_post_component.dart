@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:bluesky/bluesky.dart' hide Image, ListView;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -56,6 +59,7 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
 
   @override
   Widget build(BuildContext context) {
+    print(widget.post.record.facets);
     return BlocBuilder<PostCubit, PostState>(
       builder:
           (context, state) => Column(
@@ -269,6 +273,121 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
             ],
           ),
     );
+  }
+
+  Widget _buildTextWithFacets(String text, List<Facet>? facets) {
+    if (facets == null || facets.isEmpty) {
+      return Text(
+        text,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontSize: 16.5,
+        ),
+      );
+    }
+
+    final sortedFacets = List<Facet>.from(facets);
+    sortedFacets.sort((a, b) => a.index.byteStart.compareTo(b.index.byteStart));
+
+    final utf8Bytes = utf8.encode(text);
+    final List<InlineSpan> spans = [];
+    int currentIndex = 0;
+
+    for (var facet in sortedFacets) {
+      final byteStart = facet.index.byteStart;
+      final byteEnd = facet.index.byteEnd;
+
+      if (byteStart > currentIndex) {
+        final beforeText = utf8.decode(
+          utf8Bytes.sublist(currentIndex, byteStart),
+        );
+        spans.add(
+          TextSpan(
+            text: beforeText,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 16.5,
+            ),
+          ),
+        );
+      }
+
+      final facetText = utf8.decode(utf8Bytes.sublist(byteStart, byteEnd));
+
+      if (facet.features.isNotEmpty) {
+        var feature = facet.features.first;
+
+        if (feature.data is FacetLink) {
+          spans.add(
+            TextSpan(
+              text: facetText,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 16.5,
+                decoration: TextDecoration.underline,
+              ),
+              recognizer:
+                  TapGestureRecognizer()
+                    ..onTap = () {
+                      launchUrl(Uri.parse((feature.data as FacetLink).uri));
+                    },
+            ),
+          );
+        } else if (feature.data is FacetMention) {
+          spans.add(
+            TextSpan(
+              text: facetText,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 16.5,
+              ),
+              recognizer:
+                  TapGestureRecognizer()
+                    ..onTap = () {
+                      // TODO navigate to profile
+                    },
+            ),
+          );
+        } else {
+          spans.add(
+            TextSpan(
+              text: facetText,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16.5,
+              ),
+            ),
+          );
+        }
+      } else {
+        spans.add(
+          TextSpan(
+            text: facetText,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 16.5,
+            ),
+          ),
+        );
+      }
+
+      currentIndex = byteEnd;
+    }
+
+    if (currentIndex < utf8Bytes.length) {
+      final remainingText = utf8.decode(utf8Bytes.sublist(currentIndex));
+      spans.add(
+        TextSpan(
+          text: remainingText,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 16.5,
+          ),
+        ),
+      );
+    }
+
+    return RichText(text: TextSpan(children: spans));
   }
 
   Widget _buildParentPostsSection(PostState state) {
@@ -597,13 +716,9 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        _buildTextWithFacets(
           widget.post.record.text,
-          softWrap: true,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 14.0,
-          ),
+          widget.post.record.facets,
         ),
 
         if (shouldWarn)
