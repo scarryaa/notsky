@@ -9,6 +9,7 @@ import 'package:notsky/features/post/presentation/components/common/faceted_text
 import 'package:notsky/features/post/presentation/components/interaction/post_actions_component.dart';
 import 'package:notsky/features/post/presentation/components/interaction/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/post/base_post_component.dart';
+import 'package:notsky/features/post/presentation/components/post/post_actions_handler.dart';
 import 'package:notsky/features/post/presentation/components/post/post_media_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/quoted_post_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/util/content_label_processor.dart';
@@ -52,6 +53,12 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
 
   @override
   Widget build(BuildContext context) {
+    final actionsHandler = PostActionsHandler(
+      context: context,
+      post: widget.post,
+      contentLabelPreferences: widget.contentLabelPreferences,
+    );
+
     return BlocBuilder<PostCubit, PostState>(
       builder:
           (context, state) => Column(
@@ -118,20 +125,8 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
                             repostedByViewer: state.isReposted,
                             likedByViewer: state.isLiked,
                             // TODO post actions
-                            onLike: () async {
-                              final newLikeCount =
-                                  (state.likeCount ?? widget.post.likeCount) +
-                                  (state.isLiked ? -1 : 1);
-
-                              await context.read<PostCubit>().toggleLike(
-                                widget.post.cid,
-                                widget.post.uri,
-                              );
-
-                              context.read<PostCubit>().updateLikeCount(
-                                newLikeCount,
-                              );
-                            },
+                            onLike: () => actionsHandler.handleLike(state),
+                            onRepost: () => actionsHandler.handleRepost(state),
                             onReply: () {
                               String? avatar;
                               final authState = context.read<AuthCubit>().state;
@@ -139,120 +134,9 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
                                 final profile = authState.profile;
                                 avatar = profile?.avatar;
                               }
-
-                              bool shouldHide = false;
-                              bool shouldWarn = false;
-                              List<String> warningLabels = [];
-
-                              // TODO extract reused logic to util function
-                              for (var postLabel in widget.post.labels!) {
-                                for (var preference
-                                    in widget.contentLabelPreferences) {
-                                  if (postLabel.value.toLowerCase() ==
-                                      preference.label.toLowerCase()) {
-                                    if (preference.labelerDid == null ||
-                                        postLabel.src ==
-                                            preference.labelerDid) {
-                                      if (preference.visibility ==
-                                          ContentLabelVisibility.hide) {
-                                        shouldHide = true;
-                                        break;
-                                      } else if (preference.visibility ==
-                                          ContentLabelVisibility.warn) {
-                                        shouldWarn = true;
-                                        if (!warningLabels.contains(
-                                          postLabel.value,
-                                        )) {
-                                          warningLabels.add(postLabel.value);
-                                        }
-                                      }
-                                    }
-                                  }
-                                }
-
-                                if (shouldHide) break;
-                              }
-
-                              showModalBottomSheet(
-                                isScrollControlled: true,
-                                constraints: BoxConstraints(
-                                  minHeight:
-                                      MediaQuery.of(context).size.height - 250,
-                                  maxHeight:
-                                      MediaQuery.of(context).size.height - 250,
-                                ),
-                                context: context,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(12.0),
-                                  ),
-                                ),
-                                builder:
-                                    (context) => ReplyComponent(
-                                      hideOrWarn: shouldHide || shouldWarn,
-                                      onCancel: () {
-                                        Navigator.pop(context);
-                                      },
-                                      onReply: (String text) {
-                                        final auth = context.read<AuthCubit>();
-                                        final blueskyService =
-                                            auth.getBlueskyService();
-
-                                        blueskyService.reply(
-                                          text,
-                                          rootCid:
-                                              widget
-                                                  .post
-                                                  .record
-                                                  .reply
-                                                  ?.root
-                                                  .cid ??
-                                              widget.post.cid,
-                                          rootUri:
-                                              widget
-                                                  .post
-                                                  .record
-                                                  .reply
-                                                  ?.root
-                                                  .uri ??
-                                              widget.post.uri,
-                                          parentCid: widget.post.cid,
-                                          parentUri: widget.post.uri,
-                                        );
-                                        Navigator.of(context).pop();
-                                      },
-                                      replyPost: widget.post,
-                                      userAvatar: avatar,
-                                    ),
-                              );
+                              actionsHandler.showReplyModal(userAvatar: avatar);
                             },
-                            onMore: () {
-                              showModalBottomSheet(
-                                context: context,
-                                builder:
-                                    (context) => Container(
-                                      // TODO
-                                    ),
-                              );
-                            },
-                            onRepost: () async {
-                              final currentRepostCount =
-                                  state.repostCount ??
-                                  (widget.post.repostCount +
-                                      widget.post.quoteCount);
-                              final newRepostCount =
-                                  currentRepostCount +
-                                  (state.isReposted ? -1 : 1);
-
-                              await context.read<PostCubit>().toggleRepost(
-                                widget.post.cid,
-                                widget.post.uri,
-                              );
-
-                              context.read<PostCubit>().updateRepostCount(
-                                newRepostCount,
-                              );
-                            },
+                            onMore: () => actionsHandler.showMoreOptions(),
                           ),
                         ],
                       ),
