@@ -16,6 +16,7 @@ import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class PostComponent extends StatefulWidget {
   const PostComponent({
@@ -472,6 +473,30 @@ class _PostComponentState extends State<PostComponent> {
                 ),
               ],
             );
+          }
+        } else if (embed.data is EmbedViewExternal) {
+          final url = (embed.data as EmbedViewExternal).external.uri;
+
+          if (url.contains('youtube.com') || url.contains('youtu.be')) {
+            final videoId = YoutubePlayer.convertUrlToId(url);
+            if (videoId != null) {
+              final controller = YoutubePlayerController(
+                initialVideoId: videoId,
+                flags: YoutubePlayerFlags(autoPlay: false),
+              );
+
+              return Padding(
+                padding: EdgeInsets.only(top: 8.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: YoutubePlayer(controller: controller),
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
           }
         }
       }
