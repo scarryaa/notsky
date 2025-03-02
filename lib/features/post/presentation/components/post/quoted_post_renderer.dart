@@ -4,6 +4,7 @@ import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/post/presentation/components/common/avatar_component.dart';
 import 'package:notsky/features/post/presentation/components/media/clickable_image_grid.dart';
 import 'package:notsky/features/post/presentation/components/media/image_detail_screen.dart';
+import 'package:notsky/features/post/presentation/components/post/util/time_formatter.dart';
 import 'package:notsky/features/post/presentation/controllers/bottom_nav_visibility_controller.dart';
 import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
@@ -247,10 +248,20 @@ class QuotedPostRenderer {
                       ),
                     ),
                   ),
+                  Text(' • '),
+                  Flexible(
+                    child: Text(
+                      TimeFormatter.getRelativeTime(quotedPost.indexedAt),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: 4.0),
-              Text(quotedPost.value.text),
+              if (quotedPost.value.text.isNotEmpty) Text(quotedPost.value.text),
               _buildQuotedPostMedia(context, quotedPost),
             ],
           ),

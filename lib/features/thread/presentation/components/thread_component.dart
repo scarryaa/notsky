@@ -198,12 +198,17 @@ class ThreadComponent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (feedItem.reply!.parent.data is NotFoundPost)
-          BasePostComponent(
-            postContent: MissingPost(feedItem.reply!.root.data as NotFoundPost),
-            reason: feedItem.reason,
-            reply: feedItem.reply,
-            contentLabelPreferences: contentLabelPreferences,
-          )
+          feedItem.reply!.root.data is BlockedPost
+              ? _buildBlockedPostComponent(context)
+              : BasePostComponent(
+                postContent:
+                    feedItem.reply!.root.data is NotFoundPost
+                        ? MissingPost(feedItem.reply!.root.data as NotFoundPost)
+                        : RegularPost(feedItem.reply!.root.data as Post),
+                reason: feedItem.reason,
+                reply: feedItem.reply,
+                contentLabelPreferences: contentLabelPreferences,
+              )
         else if (feedItem.reply!.parent.data is BlockedPost)
           _buildBlockedPostComponent(context)
         else if (feedItem.post.record.reply?.root.uri !=
