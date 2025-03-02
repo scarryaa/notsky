@@ -10,6 +10,7 @@ import 'package:notsky/features/post/presentation/components/interaction/reply_c
 import 'package:notsky/features/post/presentation/components/post/post_media_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/quoted_post_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/util/content_label_processor.dart';
+import 'package:notsky/features/post/presentation/components/post/util/time_formatter.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
@@ -378,7 +379,7 @@ class _PostComponentState extends State<PostComponent> {
 
   Widget _buildIndexedAt() {
     return Text(
-      getRelativeTime(widget.post.indexedAt),
+      TimeFormatter.getRelativeTime(widget.post.indexedAt),
       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
     );
   }
@@ -562,24 +563,5 @@ class _PostComponentState extends State<PostComponent> {
         ),
       ),
     );
-  }
-
-  String getRelativeTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inSeconds < 60) {
-      return 'now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h';
-    } else if (difference.inDays < 30) {
-      return '${difference.inDays}d';
-    } else if (difference.inDays < 365) {
-      return '${(difference.inDays / 30).floor()}mo';
-    } else {
-      return '${(difference.inDays / 365).floor()}y';
-    }
   }
 }

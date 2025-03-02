@@ -1,7 +1,6 @@
 import 'package:bluesky/bluesky.dart' hide Image, ListView;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
@@ -13,6 +12,7 @@ import 'package:notsky/features/post/presentation/components/post/base_post_comp
 import 'package:notsky/features/post/presentation/components/post/post_media_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/quoted_post_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/util/content_label_processor.dart';
+import 'package:notsky/features/post/presentation/components/post/util/time_formatter.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -662,16 +662,12 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
 
   Widget _buildIndexedAt(BuildContext context) {
     return Text(
-      formatTime(widget.post.indexedAt),
+      TimeFormatter.formatTimeToExpanded(widget.post.indexedAt),
       style: TextStyle(
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontSize: 12.0,
       ),
     );
-  }
-
-  String formatTime(DateTime indexedAt) {
-    return DateFormat('MMMM d, yyyy \'at\' h:mm a').format(indexedAt.toLocal());
   }
 
   Widget _buildStats(BuildContext context, PostState state) {
