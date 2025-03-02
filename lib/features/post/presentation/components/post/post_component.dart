@@ -9,6 +9,7 @@ import 'package:notsky/features/post/presentation/components/interaction/post_ac
 import 'package:notsky/features/post/presentation/components/interaction/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/post/post_media_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/quoted_post_renderer.dart';
+import 'package:notsky/features/post/presentation/components/post/util/content_label_processor.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
@@ -383,32 +384,12 @@ class _PostComponentState extends State<PostComponent> {
   }
 
   Widget _buildPostContent() {
-    bool shouldHide = false;
-    bool shouldWarn = false;
-    List<String> warningLabels = [];
+    final contentVisibility = ContentLabelProcessor.processLabels(
+      widget.post.labels,
+      widget.contentLabelPreferences,
+    );
 
-    for (var postLabel in widget.post.labels!) {
-      for (var preference in widget.contentLabelPreferences) {
-        if (postLabel.value.toLowerCase() == preference.label.toLowerCase()) {
-          if (preference.labelerDid == null ||
-              postLabel.src == preference.labelerDid) {
-            if (preference.visibility == ContentLabelVisibility.hide) {
-              shouldHide = true;
-              break;
-            } else if (preference.visibility == ContentLabelVisibility.warn) {
-              shouldWarn = true;
-              if (!warningLabels.contains(postLabel.value)) {
-                warningLabels.add(postLabel.value);
-              }
-            }
-          }
-        }
-      }
-
-      if (shouldHide) break;
-    }
-
-    if (shouldHide) {
+    if (contentVisibility.shouldHide) {
       return Container(
         padding: EdgeInsets.symmetric(vertical: 8.0),
         child: Text(
@@ -432,7 +413,7 @@ class _PostComponentState extends State<PostComponent> {
             fontSize: 14.0,
           ),
 
-        if (shouldWarn)
+        if (contentVisibility.shouldWarn)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -449,7 +430,7 @@ class _PostComponentState extends State<PostComponent> {
                     SizedBox(width: 8.0),
                     Expanded(
                       child: Text(
-                        warningLabels.join(', '),
+                        contentVisibility.warningLabels.join(', '),
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
