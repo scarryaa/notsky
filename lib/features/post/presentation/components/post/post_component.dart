@@ -1,12 +1,10 @@
-import 'dart:convert';
-
 import 'package:bluesky/bluesky.dart' hide Image;
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/post/presentation/components/common/avatar_component.dart';
+import 'package:notsky/features/post/presentation/components/common/faceted_text_builder.dart';
 import 'package:notsky/features/post/presentation/components/interaction/post_actions_component.dart';
 import 'package:notsky/features/post/presentation/components/interaction/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/media/clickable_image_grid.dart';
@@ -318,121 +316,6 @@ class _PostComponentState extends State<PostComponent> {
             ),
           ),
     );
-  }
-
-  Widget _buildTextWithFacets(String text, List<Facet>? facets) {
-    if (facets == null || facets.isEmpty) {
-      return Text(
-        text,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontSize: 14.0,
-        ),
-      );
-    }
-
-    final sortedFacets = List<Facet>.from(facets);
-    sortedFacets.sort((a, b) => a.index.byteStart.compareTo(b.index.byteStart));
-
-    final utf8Bytes = utf8.encode(text);
-    final List<InlineSpan> spans = [];
-    int currentIndex = 0;
-
-    for (var facet in sortedFacets) {
-      final byteStart = facet.index.byteStart;
-      final byteEnd = facet.index.byteEnd;
-
-      if (byteStart > currentIndex) {
-        final beforeText = utf8.decode(
-          utf8Bytes.sublist(currentIndex, byteStart),
-        );
-        spans.add(
-          TextSpan(
-            text: beforeText,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 14.0,
-            ),
-          ),
-        );
-      }
-
-      final facetText = utf8.decode(utf8Bytes.sublist(byteStart, byteEnd));
-
-      if (facet.features.isNotEmpty) {
-        var feature = facet.features.first;
-
-        if (feature.data is FacetLink) {
-          spans.add(
-            TextSpan(
-              text: facetText,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 14.0,
-                decoration: TextDecoration.underline,
-              ),
-              recognizer:
-                  TapGestureRecognizer()
-                    ..onTap = () {
-                      launchUrl(Uri.parse((feature.data as FacetLink).uri));
-                    },
-            ),
-          );
-        } else if (feature.data is FacetMention) {
-          spans.add(
-            TextSpan(
-              text: facetText,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 14.0,
-              ),
-              recognizer:
-                  TapGestureRecognizer()
-                    ..onTap = () {
-                      // TODO navigate to profile
-                    },
-            ),
-          );
-        } else {
-          spans.add(
-            TextSpan(
-              text: facetText,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 14.0,
-              ),
-            ),
-          );
-        }
-      } else {
-        spans.add(
-          TextSpan(
-            text: facetText,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 14.0,
-            ),
-          ),
-        );
-      }
-
-      currentIndex = byteEnd;
-    }
-
-    if (currentIndex < utf8Bytes.length) {
-      final remainingText = utf8.decode(utf8Bytes.sublist(currentIndex));
-      spans.add(
-        TextSpan(
-          text: remainingText,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 14.0,
-          ),
-        ),
-      );
-    }
-
-    return RichText(text: TextSpan(children: spans));
   }
 
   Widget _buildQuotedPost() {
@@ -905,9 +788,11 @@ class _PostComponentState extends State<PostComponent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.post.record.text.isNotEmpty)
-          _buildTextWithFacets(
+          FacetedTextBuilder.build(
+            context,
             widget.post.record.text,
             widget.post.record.facets,
+            fontSize: 14.0,
           ),
 
         if (shouldWarn)
