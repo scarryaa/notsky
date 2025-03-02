@@ -7,16 +7,12 @@ import 'package:notsky/features/post/presentation/components/common/avatar_compo
 import 'package:notsky/features/post/presentation/components/common/faceted_text_builder.dart';
 import 'package:notsky/features/post/presentation/components/interaction/post_actions_component.dart';
 import 'package:notsky/features/post/presentation/components/interaction/reply_component.dart';
-import 'package:notsky/features/post/presentation/components/media/clickable_image_grid.dart';
-import 'package:notsky/features/post/presentation/components/media/image_detail_screen.dart';
+import 'package:notsky/features/post/presentation/components/post/post_media_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/quoted_post_renderer.dart';
-import 'package:notsky/features/post/presentation/components/post/shared_post_methods.dart';
-import 'package:notsky/features/post/presentation/controllers/bottom_nav_visibility_controller.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
 import 'package:notsky/features/post/presentation/pages/post_detail_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PostComponent extends StatefulWidget {
@@ -468,11 +464,12 @@ class _PostComponentState extends State<PostComponent> {
                   ],
                 ),
               ),
-              if (_mediaContentExpanded) _buildMediaContent(),
+              if (_mediaContentExpanded)
+                PostMediaRenderer.build(context, widget.post),
             ],
           )
         else
-          _buildMediaContent(),
+          PostMediaRenderer.build(context, widget.post),
         _buildExternal(),
         QuotedPostRenderer.buildQuotedPost(
           context,
@@ -584,88 +581,6 @@ class _PostComponentState extends State<PostComponent> {
         ),
       ),
     );
-  }
-
-  Widget _buildMediaContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SharedPostMethods.buildGifOrYoutubeVideo(widget.post),
-        SharedPostMethods.buildVideo(widget.post),
-        _buildImageGrid(),
-      ],
-    );
-  }
-
-  Widget _buildImageGrid() {
-    final embed = widget.post.embed;
-    if (embed == null ||
-        embed.data is! EmbedViewImages &&
-            embed.data is! EmbedViewRecordWithMedia) {
-      return const SizedBox.shrink();
-    }
-
-    if (embed.data is EmbedViewImages) {
-      final imageEmbed = embed.data as EmbedViewImages;
-      final images = imageEmbed.images;
-
-      return ClickableImageGrid(
-        images: images,
-        onImageTap: (image, index) {
-          final navController = Provider.of<BottomNavVisibilityController>(
-            context,
-            listen: false,
-          );
-          navController.hide();
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder:
-                  (context) => ImageDetailScreen(
-                    images: images,
-                    initialIndex: index,
-                    onExit: () {
-                      navController.show();
-                    },
-                  ),
-            ),
-          );
-        },
-      );
-    } else if (embed.data is EmbedViewRecordWithMedia) {
-      final recordWithMedia = embed.data as EmbedViewRecordWithMedia;
-
-      if (recordWithMedia.media.data is EmbedViewImages) {
-        final imageEmbed = recordWithMedia.media.data as EmbedViewImages;
-        final images = imageEmbed.images;
-
-        return ClickableImageGrid(
-          images: images,
-          onImageTap: (image, index) {
-            final navController = Provider.of<BottomNavVisibilityController>(
-              context,
-              listen: false,
-            );
-            navController.hide();
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder:
-                    (context) => ImageDetailScreen(
-                      images: images,
-                      initialIndex: index,
-                      onExit: () {
-                        navController.show();
-                      },
-                    ),
-              ),
-            );
-          },
-        );
-      } else {
-        return SizedBox.shrink();
-      }
-    } else {
-      return SizedBox.shrink();
-    }
   }
 
   String getRelativeTime(DateTime dateTime) {
