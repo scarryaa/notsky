@@ -54,6 +54,8 @@ class AuthCubit extends Cubit<AuthState> {
       final session = await refreshSession(refreshJwt: refreshJwt);
       await _saveSession(session.data);
       emit(AuthSuccess(session.data));
+      final profile = await getBlueskyService().getProfile(session.data.did);
+      emit(AuthSuccess(session.data, profile: profile));
     } catch (e) {
       emit(AuthError(e.toString()));
     }

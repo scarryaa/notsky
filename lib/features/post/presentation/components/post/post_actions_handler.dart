@@ -37,7 +37,11 @@ class PostActionsHandler {
     context.read<PostCubit>().updateRepostCount(newRepostCount);
   }
 
-  void showReplyModal({String? userAvatar, bool isQuotePosting = false}) {
+  void showReplyModal({
+    String? userDid,
+    String? userAvatar,
+    bool isQuotePosting = false,
+  }) {
     final contentVisibility = ContentLabelProcessor.processLabels(
       post.labels,
       contentLabelPreferences,
@@ -79,6 +83,7 @@ class PostActionsHandler {
               Navigator.of(context).pop();
             },
             replyPost: post,
+            userDid: userDid,
             userAvatar: userAvatar,
           ),
     );

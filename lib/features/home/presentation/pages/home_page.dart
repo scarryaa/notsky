@@ -354,10 +354,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       ),
                       builder: (context) {
                         String? avatar;
+                        String? did;
                         final authState = context.read<AuthCubit>().state;
                         if (authState is AuthSuccess) {
                           final profile = authState.profile;
                           avatar = profile?.avatar;
+                          did = profile?.did;
                         }
 
                         return ReplyComponent(
@@ -375,6 +377,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           },
                           replyPost: null,
                           userAvatar: avatar,
+                          userDid: did,
                         );
                       },
                     );

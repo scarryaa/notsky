@@ -94,6 +94,7 @@ class _PostComponentState extends State<PostComponent> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AvatarComponent(
+                        actorDid: widget.post.author.did,
                         avatar: widget.post.author.avatar,
                         size: 40.0,
                       ),
@@ -175,13 +176,16 @@ class _PostComponentState extends State<PostComponent> {
                                   () => actionsHandler.handleRepost(state),
                               onQuote: () {
                                 String? avatar;
+                                String? did;
                                 final authState =
                                     context.read<AuthCubit>().state;
                                 if (authState is AuthSuccess) {
                                   final profile = authState.profile;
                                   avatar = profile?.avatar;
+                                  did = profile?.did;
                                 }
                                 actionsHandler.showReplyModal(
+                                  userDid: did,
                                   userAvatar: avatar,
                                   isQuotePosting: true,
                                 );

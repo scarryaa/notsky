@@ -6,6 +6,7 @@ import 'package:notsky/features/post/presentation/components/common/character_co
 class ReplyComponent extends StatefulWidget {
   const ReplyComponent({
     super.key,
+    required this.userDid,
     required this.replyPost,
     required this.userAvatar,
     required this.hideOrWarn,
@@ -14,6 +15,7 @@ class ReplyComponent extends StatefulWidget {
     this.onReply,
   });
 
+  final String? userDid;
   final Post? replyPost;
   final String? userAvatar;
   final bool? hideOrWarn;
@@ -188,6 +190,7 @@ class _ReplyComponentState extends State<ReplyComponent> {
               Row(
                 children: [
                   AvatarComponent(
+                    actorDid: widget.replyPost!.author.did,
                     avatar: widget.replyPost!.author.avatar,
                     size: 24.0,
                   ),
@@ -304,7 +307,11 @@ class _ReplyComponentState extends State<ReplyComponent> {
         spacing: 12.0,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AvatarComponent(avatar: widget.replyPost!.author.avatar, size: 40.0),
+          AvatarComponent(
+            actorDid: widget.replyPost!.author.did,
+            avatar: widget.replyPost!.author.avatar,
+            size: 40.0,
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,7 +347,11 @@ class _ReplyComponentState extends State<ReplyComponent> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AvatarComponent(avatar: widget.userAvatar, size: 40.0),
+          AvatarComponent(
+            actorDid: widget.userDid,
+            avatar: widget.userAvatar,
+            size: 40.0,
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -86,6 +86,7 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           AvatarComponent(
+                            actorDid: widget.post.author.did,
                             avatar: widget.post.author.avatar,
                             size: 40.0,
                           ),

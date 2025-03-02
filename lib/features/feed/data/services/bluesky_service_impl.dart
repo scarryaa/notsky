@@ -2,12 +2,13 @@ import 'package:atproto_core/atproto_core.dart';
 import 'package:bluesky/atproto.dart';
 import 'package:bluesky/bluesky.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/feed/domain/services/bluesky_service.dart';
 import 'package:notsky/features/post/domain/entities/post_action_result.dart';
 import 'package:notsky/util/util.dart';
 
 class BlueskyServiceImpl implements BlueskyService {
-  final Bluesky _bluesky;
+  Bluesky _bluesky;
   final AuthCubit _authCubit;
 
   BlueskyServiceImpl(Session session, this._authCubit)
@@ -21,11 +22,8 @@ class BlueskyServiceImpl implements BlueskyService {
       return (threadViewPost.data as PostThreadViewRecord).post;
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          return getPost(uri);
-        }
+        await _refreshAndUpdateBluesky();
+        return getPost(uri);
       }
       return null;
     }
@@ -45,15 +43,12 @@ class BlueskyServiceImpl implements BlueskyService {
       )).data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          return (await _bluesky.feed.getTimeline(
-            headers: headers,
-            cursor: cursor,
-            limit: limit,
-          )).data;
-        }
+        await _refreshAndUpdateBluesky();
+        return (await _bluesky.feed.getTimeline(
+          headers: headers,
+          cursor: cursor,
+          limit: limit,
+        )).data;
       }
       rethrow;
     }
@@ -66,11 +61,8 @@ class BlueskyServiceImpl implements BlueskyService {
       return thread.data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          return getThread(uri, depth: depth);
-        }
+        await _refreshAndUpdateBluesky();
+        return getThread(uri, depth: depth);
       }
       rethrow;
     }
@@ -90,11 +82,8 @@ class BlueskyServiceImpl implements BlueskyService {
       return contentLabelPrefs;
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          return getContentPreferences();
-        }
+        await _refreshAndUpdateBluesky();
+        return getContentPreferences();
       }
       rethrow;
     }
@@ -123,25 +112,22 @@ class BlueskyServiceImpl implements BlueskyService {
       )).data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+        await _refreshAndUpdateBluesky();
 
-          final Map<String, String> headers = {};
+        final Map<String, String> headers = {};
 
-          if (cursor != null) {
-            headers['cursor'] = cursor;
-          }
-
-          if (limit != null) {
-            headers['limit'] = limit.toString();
-          }
-
-          return (await _bluesky.feed.getFeed(
-            generatorUri: generatorUri,
-            headers: headers.isNotEmpty ? headers : null,
-          )).data;
+        if (cursor != null) {
+          headers['cursor'] = cursor;
         }
+
+        if (limit != null) {
+          headers['limit'] = limit.toString();
+        }
+
+        return (await _bluesky.feed.getFeed(
+          generatorUri: generatorUri,
+          headers: headers.isNotEmpty ? headers : null,
+        )).data;
       }
       rethrow;
     }
@@ -153,11 +139,8 @@ class BlueskyServiceImpl implements BlueskyService {
       return (await _bluesky.actor.getPreferences()).data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          return (await _bluesky.actor.getPreferences()).data;
-        }
+        await _refreshAndUpdateBluesky();
+        return (await _bluesky.actor.getPreferences()).data;
       }
       rethrow;
     }
@@ -170,12 +153,9 @@ class BlueskyServiceImpl implements BlueskyService {
       return profile.data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          final profile = await _bluesky.actor.getProfile(actor: did);
-          return profile.data;
-        }
+        await _refreshAndUpdateBluesky();
+        final profile = await _bluesky.actor.getProfile(actor: did);
+        return profile.data;
       }
       rethrow;
     }
@@ -201,28 +181,36 @@ class BlueskyServiceImpl implements BlueskyService {
       return (await _bluesky.feed.getFeedGenerators(uris: savedFeedUris)).data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+        await _refreshAndUpdateBluesky();
 
-          final preferences = await getPreferences();
+        final preferences = await getPreferences();
 
-          final savedFeedUris =
-              preferences.preferences
-                  .where((pref) => pref.data is SavedFeedsPrefV2)
-                  .map((pref) => pref.data as SavedFeedsPrefV2)
-                  .expand(
-                    (savedFeedsPref) =>
-                        savedFeedsPref.items.map((feed) => AtUri(feed.value)),
-                  )
-                  .toList();
+        final savedFeedUris =
+            preferences.preferences
+                .where((pref) => pref.data is SavedFeedsPrefV2)
+                .map((pref) => pref.data as SavedFeedsPrefV2)
+                .expand(
+                  (savedFeedsPref) =>
+                      savedFeedsPref.items.map((feed) => AtUri(feed.value)),
+                )
+                .toList();
 
-          return (await _bluesky.feed.getFeedGenerators(
-            uris: savedFeedUris,
-          )).data;
-        }
+        return (await _bluesky.feed.getFeedGenerators(
+          uris: savedFeedUris,
+        )).data;
       }
       rethrow;
+    }
+  }
+
+  Future<void> _refreshAndUpdateBluesky() async {
+    final currentSession = _bluesky.session;
+    if (currentSession != null) {
+      await _authCubit.refreshUserSession(currentSession.refreshJwt);
+      if (_authCubit.state is AuthSuccess) {
+        final newSession = (_authCubit.state as AuthSuccess).session;
+        _bluesky = Bluesky.fromSession(newSession);
+      }
     }
   }
 
@@ -233,12 +221,9 @@ class BlueskyServiceImpl implements BlueskyService {
       return PostActionResult(success: true, uri: result.data.uri);
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          final result = await _bluesky.feed.like(cid: cid, uri: uri);
-          return PostActionResult(success: true, uri: result.data.uri);
-        }
+        await _refreshAndUpdateBluesky();
+        final result = await _bluesky.feed.like(cid: cid, uri: uri);
+        return PostActionResult(success: true, uri: result.data.uri);
       }
       return PostActionResult(error: e.toString());
     }
@@ -256,12 +241,9 @@ class BlueskyServiceImpl implements BlueskyService {
       return PostActionResult(success: true, uri: result.data.uri);
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          final result = await _bluesky.feed.post(text: text);
-          return PostActionResult(success: true, uri: result.data.uri);
-        }
+        await _refreshAndUpdateBluesky();
+        final result = await _bluesky.feed.post(text: text);
+        return PostActionResult(success: true, uri: result.data.uri);
       }
       return PostActionResult(error: e.toString());
     }
@@ -274,12 +256,9 @@ class BlueskyServiceImpl implements BlueskyService {
       return PostActionResult(success: true, uri: result.data.uri);
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          final result = await _bluesky.feed.post(text: text);
-          return PostActionResult(success: true, uri: result.data.uri);
-        }
+        await _refreshAndUpdateBluesky();
+        final result = await _bluesky.feed.post(text: text);
+        return PostActionResult(success: true, uri: result.data.uri);
       }
       return PostActionResult(error: e.toString());
     }
@@ -304,12 +283,15 @@ class BlueskyServiceImpl implements BlueskyService {
       return PostActionResult(success: true, uri: result.data.uri);
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          final result = await _bluesky.feed.post(text: text);
-          return PostActionResult(success: true, uri: result.data.uri);
-        }
+        await _refreshAndUpdateBluesky();
+        final result = await _bluesky.feed.post(
+          text: text,
+          reply: ReplyRef(
+            root: StrongRef(cid: rootCid, uri: rootUri),
+            parent: StrongRef(cid: parentCid, uri: parentUri),
+          ),
+        );
+        return PostActionResult(success: true, uri: result.data.uri);
       }
       return PostActionResult(error: e.toString());
     }
@@ -322,12 +304,9 @@ class BlueskyServiceImpl implements BlueskyService {
       return PostActionResult(success: true, uri: result.data.uri);
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          await _bluesky.feed.repost(cid: cid, uri: uri);
-          return PostActionResult(success: true);
-        }
+        await _refreshAndUpdateBluesky();
+        await _bluesky.feed.repost(cid: cid, uri: uri);
+        return PostActionResult(success: true);
       }
       return PostActionResult(error: e.toString());
     }
@@ -340,12 +319,9 @@ class BlueskyServiceImpl implements BlueskyService {
       return PostActionResult(success: true);
     } catch (e) {
       if (isExpiredTokenError(e)) {
-        final currentSession = _bluesky.session;
-        if (currentSession != null) {
-          await _authCubit.refreshUserSession(currentSession.refreshJwt);
-          await _bluesky.atproto.repo.deleteRecord(uri: uri);
-          return PostActionResult(success: true);
-        }
+        await _refreshAndUpdateBluesky();
+        await _bluesky.atproto.repo.deleteRecord(uri: uri);
+        return PostActionResult(success: true);
       }
       return PostActionResult(error: e.toString());
     }

@@ -40,13 +40,13 @@ class _PostDetailPageState extends State<PostDetailPage> with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    NotSkyApp.routeObserver.subscribe(this, ModalRoute.of(context)!);
+    NotSkyApp.routeObservers[0]!.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    NotSkyApp.routeObserver.unsubscribe(this);
+    NotSkyApp.routeObservers[0]!.unsubscribe(this);
     super.dispose();
   }
 

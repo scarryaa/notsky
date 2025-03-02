@@ -229,7 +229,11 @@ class QuotedPostRenderer {
             children: [
               Row(
                 children: [
-                  AvatarComponent(avatar: quotedPost.author.avatar, size: 20.0),
+                  AvatarComponent(
+                    actorDid: quotedPost.author.did,
+                    avatar: quotedPost.author.avatar,
+                    size: 20.0,
+                  ),
                   SizedBox(width: 8.0),
                   Flexible(
                     child: Text(

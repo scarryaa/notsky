@@ -5,6 +5,7 @@ import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/auth/presentation/pages/login_page.dart';
 import 'package:notsky/features/feed/data/providers/feed_repository_provider.dart';
 import 'package:notsky/features/home/presentation/cubits/feed_list_cubit.dart';
+import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:notsky/shared/components/base_scaffold.dart';
 
 void main() {
@@ -13,8 +14,9 @@ void main() {
 }
 
 class NotSkyApp extends StatelessWidget {
-  static final RouteObserver<ModalRoute<void>> routeObserver =
-      RouteObserver<ModalRoute<void>>();
+  static final Map<int, RouteObserver<ModalRoute<void>>> routeObservers = {
+    0: RouteObserver<ModalRoute<void>>(),
+  };
 
   const NotSkyApp({super.key});
 
@@ -23,6 +25,13 @@ class NotSkyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => AuthCubit()..checkAuthStatus()),
+        BlocProvider<ProfileCubit>(
+          create: (context) {
+            final bskyService = context.read<AuthCubit>().getBlueskyService();
+
+            return ProfileCubit(bskyService);
+          },
+        ),
         BlocProvider<FeedListCubit>(
           create: (context) {
             return FeedListCubit(
@@ -38,6 +47,9 @@ class NotSkyApp extends StatelessWidget {
         listener: (context, state) {
           if (state is AuthSuccess) {
             context.read<FeedListCubit>().loadFeeds();
+
+            final bskyService = context.read<AuthCubit>().getBlueskyService();
+            context.read<ProfileCubit>().updateService(bskyService);
           }
         },
         child: MaterialApp(
