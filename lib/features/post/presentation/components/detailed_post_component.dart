@@ -846,7 +846,6 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
   }
 
   Widget _buildQuotedPostMedia(EmbedViewRecordViewRecord quotedPost) {
-    print(quotedPost.embeds);
     if (quotedPost.embeds != null) {
       for (final embed in quotedPost.embeds!) {
         if (embed.data is EmbedViewImages) {
@@ -911,7 +910,8 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
             );
           }
         } else if (embed.data is EmbedViewExternal) {
-          final url = (embed.data as EmbedViewExternal).external.uri;
+          final external = embed.data as EmbedViewExternal;
+          final url = external.external.uri;
 
           if (url.contains('youtube.com') || url.contains('youtu.be')) {
             final videoId = YoutubePlayer.convertUrlToId(url);
@@ -933,6 +933,87 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
               );
             }
             return const SizedBox.shrink();
+          } else {
+            return InkWell(
+              splashFactory: NoSplash.splashFactory,
+              splashColor: Colors.transparent,
+              onTap: () {
+                launchUrl(Uri.parse(url));
+              },
+              child: Container(
+                margin: EdgeInsets.only(top: 8.0),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.25),
+                  ),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (external.external.thumbnail != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(7.0),
+                        ),
+                        child: Image.network(
+                          external.external.thumbnail!,
+                          width: double.infinity,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            external.external.title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14.0,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              external.external.description,
+                              style: TextStyle(
+                                fontSize: 12.0,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              Uri.parse(external.external.uri).host,
+                              style: TextStyle(
+                                fontSize: 12.0,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
         }
       }
