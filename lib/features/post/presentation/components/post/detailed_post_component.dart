@@ -7,16 +7,15 @@ import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/common/avatar_component.dart';
 import 'package:notsky/features/post/presentation/components/common/faceted_text_builder.dart';
 import 'package:notsky/features/post/presentation/components/interaction/post_actions_component.dart';
-import 'package:notsky/features/post/presentation/components/interaction/reply_component.dart';
 import 'package:notsky/features/post/presentation/components/post/base_post_component.dart';
 import 'package:notsky/features/post/presentation/components/post/post_actions_handler.dart';
+import 'package:notsky/features/post/presentation/components/post/post_external_content_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/post_media_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/quoted_post_renderer.dart';
 import 'package:notsky/features/post/presentation/components/post/util/content_label_processor.dart';
 import 'package:notsky/features/post/presentation/components/post/util/time_formatter.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/post/presentation/cubits/post_state.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class DetailedPostComponent extends StatefulWidget {
   const DetailedPostComponent({
@@ -124,9 +123,20 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
                                     widget.post.quoteCount),
                             repostedByViewer: state.isReposted,
                             likedByViewer: state.isLiked,
-                            // TODO post actions
                             onLike: () => actionsHandler.handleLike(state),
                             onRepost: () => actionsHandler.handleRepost(state),
+                            onQuote: () {
+                              String? avatar;
+                              final authState = context.read<AuthCubit>().state;
+                              if (authState is AuthSuccess) {
+                                final profile = authState.profile;
+                                avatar = profile?.avatar;
+                              }
+                              actionsHandler.showReplyModal(
+                                userAvatar: avatar,
+                                isQuotePosting: true,
+                              );
+                            },
                             onReply: () {
                               String? avatar;
                               final authState = context.read<AuthCubit>().state;
@@ -394,44 +404,10 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
         ),
 
         if (contentVisibility.shouldWarn)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                margin: EdgeInsets.symmetric(vertical: 8.0),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.amber, size: 18.0),
-                    SizedBox(width: 8.0),
-                    Expanded(
-                      child: Text(
-                        contentVisibility.warningLabels.join(', '),
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _mediaContentExpanded = !_mediaContentExpanded;
-                        });
-                      },
-                      child: Text(_mediaContentExpanded ? 'Hide' : 'Show'),
-                    ),
-                  ],
-                ),
-              ),
-              if (_mediaContentExpanded)
-                PostMediaRenderer.build(context, widget.post, detailed: true),
-            ],
-          )
+          _buildContentGate(contentVisibility)
         else
           PostMediaRenderer.build(context, widget.post, detailed: true),
-        _buildExternal(),
+        PostExternalContentRenderer.buildExternal(context, widget.post),
         QuotedPostRenderer.buildQuotedPost(
           context,
           widget.post,
@@ -441,106 +417,41 @@ class _DetailedPostComponentState extends State<DetailedPostComponent> {
     );
   }
 
-  Widget _buildExternal() {
-    final embed = widget.post.embed;
-
-    if (embed?.data is EmbedViewExternal) {
-      final external = (embed!.data as EmbedViewExternal).external;
-      // These are handled in other methods already
-      if (external.uri.contains('youtu.be') ||
-          external.uri.contains('youtube') ||
-          external.uri.contains('tenor')) {
-        return SizedBox.shrink();
-      }
-      return _buildExternalContent(external);
-    }
-
-    if (embed?.data is EmbedViewRecordWithMedia) {
-      final recordWithMedia = embed!.data as EmbedViewRecordWithMedia;
-      if (recordWithMedia.media.data is EmbedViewExternal) {
-        final external = recordWithMedia.media.data as EmbedViewExternal;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_buildExternalContent(external.external)],
-        );
-      }
-    }
-
-    return SizedBox.shrink();
-  }
-
-  Widget _buildExternalContent(EmbedViewExternalView external) {
-    return InkWell(
-      splashFactory: NoSplash.splashFactory,
-      splashColor: Colors.transparent,
-      onTap: () {
-        launchUrl(Uri.parse(external.uri));
-      },
-      child: Container(
-        margin: EdgeInsets.only(top: 8.0),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.outline.withValues(alpha: 0.25),
+  Widget _buildContentGate(ContentVisibility contentVisibility) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 8.0),
+          margin: EdgeInsets.symmetric(vertical: 8.0),
+          decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8.0),
           ),
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (external.thumbnail != null)
-              ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(7.0)),
-                child: Image.network(
-                  external.thumbnail!,
-                  width: double.infinity,
-                  height: 150,
-                  fit: BoxFit.cover,
+          child: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.amber, size: 18.0),
+              SizedBox(width: 8.0),
+              Expanded(
+                child: Text(
+                  contentVisibility.warningLabels.join(', '),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-            Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    external.title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14.0,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      external.description,
-                      style: TextStyle(
-                        fontSize: 12.0,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      Uri.parse(external.uri).host,
-                      style: TextStyle(
-                        fontSize: 12.0,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _mediaContentExpanded = !_mediaContentExpanded;
+                  });
+                },
+                child: Text(_mediaContentExpanded ? 'Hide' : 'Show'),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+        if (_mediaContentExpanded)
+          PostMediaRenderer.build(context, widget.post, detailed: true),
+      ],
     );
   }
 

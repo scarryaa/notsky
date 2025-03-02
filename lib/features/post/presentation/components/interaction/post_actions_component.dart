@@ -10,6 +10,7 @@ class PostActionsComponent extends StatelessWidget {
     required this.replyCount,
     required this.repostedByViewer,
     required this.likedByViewer,
+    required this.onQuote,
     required this.onLike,
     required this.onReply,
     required this.onRepost,
@@ -23,6 +24,7 @@ class PostActionsComponent extends StatelessWidget {
   final int replyCount;
   final bool repostedByViewer;
   final bool likedByViewer;
+  final void Function() onQuote;
   final void Function() onReply;
   final void Function() onRepost;
   final void Function() onLike;
@@ -48,6 +50,7 @@ class PostActionsComponent extends StatelessWidget {
           context,
           onPressed: onRepost,
           icon: Icons.repeat,
+          onHeld: onQuote,
           metric: repostCount,
           color:
               repostedByViewer
@@ -82,6 +85,7 @@ class PostActionsComponent extends StatelessWidget {
   Widget _buildActionButton(
     BuildContext context, {
     required void Function() onPressed,
+    void Function()? onHeld,
     required IconData icon,
     bool isFirst = false,
     Color? color,
@@ -97,14 +101,17 @@ class PostActionsComponent extends StatelessWidget {
         children: [
           Transform.translate(
             offset: isFirst ? Offset(-5, 0) : Offset.zero,
-            child: IconButton(
-              onPressed: onPressed,
-              icon: Icon(icon, size: iconSize),
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-              color: color ?? Theme.of(context).colorScheme.onSurfaceVariant,
-              style: ButtonStyle(
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            child: GestureDetector(
+              onLongPress: onHeld,
+              child: IconButton(
+                onPressed: onPressed,
+                icon: Icon(icon, size: iconSize),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                color: color ?? Theme.of(context).colorScheme.onSurfaceVariant,
+                style: ButtonStyle(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
             ),
           ),

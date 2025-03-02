@@ -37,7 +37,7 @@ class PostActionsHandler {
     context.read<PostCubit>().updateRepostCount(newRepostCount);
   }
 
-  void showReplyModal({String? userAvatar}) {
+  void showReplyModal({String? userAvatar, bool isQuotePosting = false}) {
     final contentVisibility = ContentLabelProcessor.processLabels(
       post.labels,
       contentLabelPreferences,
@@ -55,22 +55,27 @@ class PostActionsHandler {
       ),
       builder:
           (context) => ReplyComponent(
+            isQuotePosting: isQuotePosting,
             hideOrWarn:
                 contentVisibility.shouldHide || contentVisibility.shouldWarn,
             onCancel: () {
               Navigator.pop(context);
             },
-            onReply: (String text) {
+            onReply: (String text, bool isQuotePosting) {
               final auth = context.read<AuthCubit>();
               final blueskyService = auth.getBlueskyService();
 
-              blueskyService.reply(
-                text,
-                rootCid: post.record.reply?.root.cid ?? post.cid,
-                rootUri: post.record.reply?.root.uri ?? post.uri,
-                parentCid: post.cid,
-                parentUri: post.uri,
-              );
+              if (isQuotePosting) {
+                blueskyService.quote(text, post.cid, post.uri);
+              } else {
+                blueskyService.reply(
+                  text,
+                  rootCid: post.record.reply?.root.cid ?? post.cid,
+                  rootUri: post.record.reply?.root.uri ?? post.uri,
+                  parentCid: post.cid,
+                  parentUri: post.uri,
+                );
+              }
               Navigator.of(context).pop();
             },
             replyPost: post,

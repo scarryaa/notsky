@@ -365,7 +365,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           onCancel: () {
                             Navigator.pop(context);
                           },
-                          onReply: (String text) {
+                          isQuotePosting: false,
+                          onReply: (String text, bool isQuotePosting) {
                             final auth = context.read<AuthCubit>();
                             final blueskyService = auth.getBlueskyService();
 

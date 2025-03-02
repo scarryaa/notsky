@@ -36,5 +36,5 @@ abstract class BlueskyService {
     required AtUri parentUri,
   });
   Future<PostActionResult> repost(String cid, AtUri uri);
-  Future<PostActionResult> quote(String cid, AtUri uri);
+  Future<PostActionResult> quote(String text, String cid, AtUri uri);
 }

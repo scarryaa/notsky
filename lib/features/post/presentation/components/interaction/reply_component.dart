@@ -9,6 +9,7 @@ class ReplyComponent extends StatefulWidget {
     required this.replyPost,
     required this.userAvatar,
     required this.hideOrWarn,
+    required this.isQuotePosting,
     this.onCancel,
     this.onReply,
   });
@@ -16,8 +17,9 @@ class ReplyComponent extends StatefulWidget {
   final Post? replyPost;
   final String? userAvatar;
   final bool? hideOrWarn;
+  final bool isQuotePosting;
   final void Function()? onCancel;
-  final void Function(String)? onReply;
+  final void Function(String, bool)? onReply;
 
   @override
   State<ReplyComponent> createState() => _ReplyComponentState();
@@ -83,7 +85,10 @@ class _ReplyComponentState extends State<ReplyComponent> {
               TextButton(
                 onPressed:
                     _isReplyEnabled
-                        ? () => widget.onReply?.call(_controller.text)
+                        ? () => widget.onReply?.call(
+                          _controller.text,
+                          widget.isQuotePosting,
+                        )
                         : () {},
                 style: ButtonStyle(
                   backgroundColor: WidgetStatePropertyAll(
@@ -105,9 +110,10 @@ class _ReplyComponentState extends State<ReplyComponent> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildReplyPost(context),
+                  if (!widget.isQuotePosting) _buildReplyPost(context),
                   if (widget.replyPost != null) Divider(height: 1.0),
                   _buildReplySection(context),
+                  if (widget.isQuotePosting) _buildQuotePost(),
                 ],
               ),
             ),
@@ -156,6 +162,109 @@ class _ReplyComponentState extends State<ReplyComponent> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildQuotePost() {
+    if (widget.replyPost == null) return SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(10.0, 16.0, 10.0, 16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  AvatarComponent(
+                    avatar: widget.replyPost!.author.avatar,
+                    size: 24.0,
+                  ),
+                  SizedBox(width: 8.0),
+                  Text(
+                    widget.replyPost!.author.displayName ?? '',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.0,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.0),
+              Text(
+                widget.replyPost!.record.text,
+                style: TextStyle(fontSize: 14.0),
+              ),
+              if (!widget.hideOrWarn! && _hasImages())
+                Padding(
+                  padding: EdgeInsets.only(top: 8.0),
+                  child: _buildQuoteImagePreview(),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _hasImages() {
+    final embed = widget.replyPost!.embed;
+    if (embed == null || embed.data is! EmbedViewImages) {
+      return false;
+    }
+
+    final imageEmbed = embed.data as EmbedViewImages;
+    return imageEmbed.images.isNotEmpty;
+  }
+
+  Widget _buildQuoteImagePreview() {
+    final embed = widget.replyPost!.embed;
+    final imageEmbed = embed!.data as EmbedViewImages;
+    final images = imageEmbed.images;
+
+    const double previewSize = 40.0;
+
+    return Row(
+      children: [
+        for (int i = 0; i < images.length && i < 3; i++)
+          Padding(
+            padding: EdgeInsets.only(right: 4.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4.0),
+              child: Image.network(
+                images[i].thumbnail,
+                width: previewSize,
+                height: previewSize,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        if (images.length > 3)
+          Container(
+            width: previewSize,
+            height: previewSize,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(4.0),
+            ),
+            child: Center(
+              child: Text(
+                '+${images.length - 3}',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
       ],
     );
   }

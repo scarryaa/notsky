@@ -1,5 +1,5 @@
 import 'package:bluesky/bluesky.dart' hide Image;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide ListView;
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/post/presentation/components/common/avatar_component.dart';
 import 'package:notsky/features/post/presentation/components/media/clickable_image_grid.dart';
@@ -45,6 +45,10 @@ class QuotedPostRenderer {
         return _buildQuoteDeletedView(context);
       }
 
+      if (((quoteEmbed.record).data) is ListView) {
+        return _buildQuoteListView(context, quoteEmbed.record.data as ListView);
+      }
+
       final quotedRecord =
           (quoteEmbed.record).data as EmbedViewRecordViewRecord;
       return _buildQuotePostView(
@@ -55,6 +59,88 @@ class QuotedPostRenderer {
     }
 
     return const SizedBox.shrink();
+  }
+
+  static Widget _buildQuoteListView(BuildContext context, ListView listView) {
+    return GestureDetector(
+      onTap: () {
+        // TODO Navigate to list
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 8.0),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            spacing: 8.0,
+            children: [
+              Row(
+                spacing: 8.0,
+                children: [
+                  SizedBox(
+                    width: 30.0,
+                    height: 30.0,
+                    child:
+                        listView.avatar != null && listView.avatar!.isNotEmpty
+                            ? Image.network(listView.avatar!)
+                            : Container(),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          listView.name,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '${_parseListPurpose(listView.purpose)} by ${listView.createdBy.handle}',
+                          style: const TextStyle(fontSize: 12.5),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      listView.description ?? '',
+                      softWrap: true,
+                      style: TextStyle(fontSize: 12.5),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _parseListPurpose(String purpose) {
+    switch (purpose) {
+      case 'app.bsky.graph.defs#modlist':
+        return 'Moderation list';
+      default:
+        return 'Unknown list';
+    }
   }
 
   static Widget _buildQuoteDeletedView(BuildContext context) {

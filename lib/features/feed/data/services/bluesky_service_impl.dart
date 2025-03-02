@@ -245,9 +245,26 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
-  Future<PostActionResult> quote(String cid, AtUri uri) {
-    // TODO: implement quote
-    throw UnimplementedError();
+  Future<PostActionResult> quote(String text, String cid, AtUri uri) async {
+    try {
+      final result = await _bluesky.feed.post(
+        text: text,
+        embed: Embed.record(
+          data: EmbedRecord(ref: StrongRef(cid: cid, uri: uri)),
+        ),
+      );
+      return PostActionResult(success: true, uri: result.data.uri);
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        final currentSession = _bluesky.session;
+        if (currentSession != null) {
+          await _authCubit.refreshUserSession(currentSession.refreshJwt);
+          final result = await _bluesky.feed.post(text: text);
+          return PostActionResult(success: true, uri: result.data.uri);
+        }
+      }
+      return PostActionResult(error: e.toString());
+    }
   }
 
   @override
