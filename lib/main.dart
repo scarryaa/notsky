@@ -40,9 +40,6 @@ class NotSkyApp extends StatelessWidget {
         listener: (context, state) {
           if (state is AuthSuccess) {
             context.read<FeedListCubit>().loadFeeds();
-
-            final bskyService = context.read<AuthCubit>().getBlueskyService();
-            context.read<ProfileCubit>().updateService(bskyService);
           }
         },
         child: MaterialApp(

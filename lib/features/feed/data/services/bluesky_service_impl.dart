@@ -338,6 +338,8 @@ class BlueskyServiceImpl implements BlueskyService {
         actor: authorDid,
         cursor: cursor,
         limit: limit,
+        includePins: true,
+        filter: FeedFilter.postsAndAuthorThreads,
       )).data;
     } catch (e) {
       if (isExpiredTokenError(e)) {
@@ -346,6 +348,8 @@ class BlueskyServiceImpl implements BlueskyService {
           actor: authorDid,
           cursor: cursor,
           limit: limit,
+          includePins: true,
+          filter: FeedFilter.postsAndAuthorThreads,
         )).data;
       }
       rethrow;

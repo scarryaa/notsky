@@ -6,13 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
-import 'package:notsky/features/feed/presentation/cubits/feed_state.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/common/avatar_component.dart';
 import 'package:notsky/features/post/presentation/components/post/base_post_component.dart';
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
-import 'package:notsky/features/profile/presentation/cubits/post_state.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
+import 'package:notsky/features/profile/presentation/cubits/profile_state.dart';
 import 'package:notsky/util/util.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -66,6 +65,9 @@ class _ProfilePageState extends State<ProfilePage>
                         (state.profile.associated!.starterPacks > 0 ? 1 : 0),
             vsync: this,
           );
+          _tabController.addListener(() {
+            setState(() {});
+          });
         });
 
         context.read<FeedCubit>().loadAuthorFeed(widget.actorDid);
@@ -245,68 +247,71 @@ class _ProfilePageState extends State<ProfilePage>
                     child: Row(
                       spacing: 8.0,
                       children: [
-                        _buildKnownFollowers(state),
-                        Flexible(
-                          child: Builder(
-                            builder: (context) {
-                              final knownFollowers =
-                                  state.profile.viewer.knownFollowers;
-                              final followerCount = knownFollowers?.count ?? 0;
-                              final followers = knownFollowers?.followers ?? [];
+                        if (!isOwnProfile) _buildKnownFollowers(state),
+                        if (!isOwnProfile)
+                          Flexible(
+                            child: Builder(
+                              builder: (context) {
+                                final knownFollowers =
+                                    state.profile.viewer.knownFollowers;
+                                final followerCount =
+                                    knownFollowers?.count ?? 0;
+                                final followers =
+                                    knownFollowers?.followers ?? [];
 
-                              if (followers.isEmpty) {
-                                return const SizedBox.shrink();
-                              } else if (followers.length == 1) {
-                                // Only one follower
-                                return Text(
-                                  'Followed by ${followers[0].displayName}',
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: true,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                  ),
-                                );
-                              } else if (followers.length == 2) {
-                                // Exactly two followers
-                                return Text(
-                                  'Followed by ${followers[0].displayName} and ${followers[1].displayName}',
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: true,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                  ),
-                                );
-                              } else {
-                                // More than two followers
-                                return Text(
-                                  'Followed by ${followers[0].displayName}, ${followers[1].displayName}, and ${followerCount - 2} others',
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: true,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                  ),
-                                );
-                              }
-                            },
+                                if (followers.isEmpty) {
+                                  return const SizedBox.shrink();
+                                } else if (followers.length == 1) {
+                                  // Only one follower
+                                  return Text(
+                                    'Followed by ${followers[0].displayName}',
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  );
+                                } else if (followers.length == 2) {
+                                  // Exactly two followers
+                                  return Text(
+                                    'Followed by ${followers[0].displayName} and ${followers[1].displayName}',
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  );
+                                } else {
+                                  // More than two followers
+                                  return Text(
+                                    'Followed by ${followers[0].displayName}, ${followers[1].displayName}, and ${followerCount - 2} others',
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
                 ),
-              SizedBox(height: 8.0),
+              if (!isOwnProfile) SizedBox(height: 8.0),
             ],
           ),
         ),
@@ -319,48 +324,110 @@ class _ProfilePageState extends State<ProfilePage>
           floating: true,
         ),
         SliverVisibility(
-          visible: _tabController.index == 0,
-          sliver: _buildPostsTabSliver(),
-        ),
-        SliverVisibility(
-          visible: _tabController.index == 1,
-          sliver: _buildRepliesTabSliver(),
-        ),
-        SliverVisibility(
-          visible: _tabController.index == 2,
-          sliver: _buildMediaTabSliver(),
-        ),
-        SliverVisibility(
-          visible: _tabController.index == 3,
-          sliver: _buildVideosTabSliver(),
-        ),
-        SliverVisibility(
-          visible: _tabController.index == 4,
-          sliver: _buildFeedsTabSliver(),
-        ),
-        SliverVisibility(
-          visible: _tabController.index == 5,
-          sliver: _buildStarterPacksTabSliver(),
-        ),
-        SliverVisibility(
-          visible: _tabController.index == 6,
-          sliver: _buildListsTabSliver(),
+          visible: true,
+          sliver: _getSliver(_tabController.index, isOwnProfile, state),
         ),
       ],
     );
   }
 
+  Widget _getSliver(int index, bool isOwnProfile, ProfileLoaded state) {
+    if (isOwnProfile) {
+      switch (index) {
+        case 0:
+          return _buildPostsTabSliver();
+        case 1:
+          return _buildRepliesTabSliver();
+        case 2:
+          return _buildMediaTabSliver();
+        case 3:
+          return _buildVideosTabSliver();
+        case 4:
+          return _buildLikesTabSliver();
+        case 5:
+          return _buildFeedsTabSliver();
+        case 6:
+          return _buildStarterPacksTabSliver();
+        case 7:
+          return _buildListsTabSliver();
+        default:
+          return SliverToBoxAdapter(child: SizedBox.shrink());
+      }
+    } else {
+      if (index == 0) return _buildPostsTabSliver();
+      if (index == 1) return _buildRepliesTabSliver();
+      if (index == 2) return _buildMediaTabSliver();
+      if (index == 3) return _buildVideosTabSliver();
+
+      int offset = 4;
+
+      if (state.profile.associated!.feedgens > 0) {
+        if (index == offset) return _buildFeedsTabSliver();
+        offset++;
+      }
+
+      if (state.profile.associated!.lists > 0) {
+        if (index == offset) return _buildListsTabSliver();
+        offset++;
+      }
+
+      if (state.profile.associated!.starterPacks > 0) {
+        if (index == offset) return _buildStarterPacksTabSliver();
+      }
+
+      return SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+  }
+
   Widget _buildPostsTabSliver() {
-    return BlocBuilder<FeedCubit, FeedState>(
+    return BlocBuilder<ProfileCubit, ProfileState>(
       builder: (context, state) {
-        if (state is FeedLoading) {
+        if (state is! ProfileLoaded) {
           return SliverToBoxAdapter(
             child: Center(child: CircularProgressIndicator()),
           );
-        } else if (state is FeedLoaded) {
-          return SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final feedItem = state.feeds.feed[index];
+        }
+
+        final profileState = state;
+
+        if (profileState.isLoadingPosts) {
+          return SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (profileState.authorFeed == null ||
+            profileState.authorFeed!.feed.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Center(child: Text('No posts found')),
+          );
+        }
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              // Check if we need to load more posts
+              if (index >= profileState.authorFeed!.feed.length - 5 &&
+                  profileState.hasMorePosts &&
+                  !profileState.isLoadingMorePosts) {
+                context.read<ProfileCubit>().loadMoreAuthorPosts(
+                  widget.actorDid,
+                );
+              }
+
+              // Show loading indicator at the end when loading more
+              if (index == profileState.authorFeed!.feed.length) {
+                return profileState.isLoadingMorePosts
+                    ? Center(child: CircularProgressIndicator())
+                    : SizedBox.shrink();
+              }
+
+              // Don't render beyond the available posts
+              if (index >= profileState.authorFeed!.feed.length) {
+                return SizedBox.shrink();
+              }
+
+              final feedItem = profileState.authorFeed!.feed[index];
               return Column(
                 children: [
                   BlocProvider(
@@ -373,10 +440,10 @@ class _ProfilePageState extends State<ProfilePage>
                       reason: feedItem.reason,
                       reply: feedItem.reply,
                       contentLabelPreferences:
-                          context.read<FeedCubit>().contentLabelPreferences,
+                          context.read<ProfileCubit>().contentLabelPreferences,
                     ),
                   ),
-                  if (index < state.feeds.feed.length - 1)
+                  if (index < profileState.authorFeed!.feed.length - 1)
                     Divider(
                       height: 1.0,
                       color: Theme.of(
@@ -385,47 +452,94 @@ class _ProfilePageState extends State<ProfilePage>
                     ),
                 ],
               );
-            }, childCount: state.feeds.feed.length),
-          );
-        } else {
-          return SliverToBoxAdapter(
-            child: Center(child: Text('No posts found')),
-          );
-        }
+            },
+            // Add +1 for the loading indicator
+            childCount:
+                profileState.authorFeed?.feed.length != null
+                    ? profileState.authorFeed!.feed.length +
+                        (profileState.hasMorePosts ? 1 : 0)
+                    : 0,
+          ),
+        );
       },
     );
   }
 
   Widget _buildRepliesTabSliver() {
     return SliverToBoxAdapter(
-      child: Center(child: Text('Replies tab content')),
+      child: Center(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Text('Replies tab content'),
+        ),
+      ),
     );
   }
 
   Widget _buildMediaTabSliver() {
-    return SliverToBoxAdapter(child: Center(child: Text('Media tab content')));
+    return SliverToBoxAdapter(
+      child: Center(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Text('Media tab content'),
+        ),
+      ),
+    );
   }
 
   Widget _buildVideosTabSliver() {
-    return SliverToBoxAdapter(child: Center(child: Text('Videos tab content')));
+    return SliverToBoxAdapter(
+      child: Center(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Text('Videos tab content'),
+        ),
+      ),
+    );
   }
 
   Widget _buildLikesTabSliver() {
-    return SliverToBoxAdapter(child: Center(child: Text('Likes tab content')));
+    return SliverToBoxAdapter(
+      child: Center(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Text('Likes tab content'),
+        ),
+      ),
+    );
   }
 
   Widget _buildFeedsTabSliver() {
-    return SliverToBoxAdapter(child: Center(child: Text('Feeds tab content')));
+    return SliverToBoxAdapter(
+      child: Center(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Text('Feeds tab content'),
+        ),
+      ),
+    );
   }
 
   Widget _buildStarterPacksTabSliver() {
     return SliverToBoxAdapter(
-      child: Center(child: Text('Starter Packs tab content')),
+      child: Center(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Text('Starter packs tab content'),
+        ),
+      ),
     );
   }
 
   Widget _buildListsTabSliver() {
-    return SliverToBoxAdapter(child: Center(child: Text('Lists tab content')));
+    return SliverToBoxAdapter(
+      child: Center(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Text('Lists tab content'),
+        ),
+      ),
+    );
   }
 
   Widget _buildKnownFollowers(ProfileLoaded state) {

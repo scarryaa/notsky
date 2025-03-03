@@ -151,9 +151,27 @@ class _BaseScaffoldState extends State<BaseScaffold> {
                 ),
                 bottomNavigationBar: Consumer<BottomNavVisibilityController>(
                   builder: (context, controller, child) {
+                    final mediaQuery = MediaQuery.of(context);
+                    final bottomNavHeight = mediaQuery.size.height * 0.08;
+                    final navigationBarHeight = mediaQuery.size.height * 0.06;
+
+                    final constrainedNavHeight = bottomNavHeight.clamp(
+                      60.0,
+                      88.0,
+                    );
+                    final constrainedBarHeight = navigationBarHeight.clamp(
+                      48.0,
+                      60.0,
+                    );
+
+                    final bottomPadding = mediaQuery.padding.bottom;
+
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 1),
-                      height: controller.isVisible ? 88.0 : 0.0,
+                      height:
+                          controller.isVisible
+                              ? constrainedNavHeight + bottomPadding
+                              : 0.0,
                       child:
                           controller.isVisible
                               ? Container(
@@ -170,7 +188,7 @@ class _BaseScaffoldState extends State<BaseScaffold> {
                                 child: NavigationBar(
                                   backgroundColor:
                                       Theme.of(context).colorScheme.surface,
-                                  height: 48.0,
+                                  height: constrainedBarHeight,
                                   onDestinationSelected: (int index) {
                                     setState(() {
                                       _selectedIndex = index;
