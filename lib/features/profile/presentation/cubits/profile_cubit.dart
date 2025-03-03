@@ -40,11 +40,30 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(currentState.copyWith(isLoadingPosts: true));
 
     try {
+      final Set<String> seenRootUris = {};
+      final List<FeedView> dedupedFeed = [];
+
       final feed = await _blueskyService.getAuthorFeed(actorDid);
+
+      for (final post in feed.feed) {
+        if (post.post.record.reply != null &&
+            !seenRootUris.contains(
+              post.post.record.reply?.root.uri.toString(),
+            )) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+          dedupedFeed.add(post);
+        } else if (post.post.record.reply == null &&
+            !seenRootUris.contains(post.post.uri.toString())) {
+          seenRootUris.add(post.post.uri.toString());
+          dedupedFeed.add(post);
+        }
+      }
+
+      final Feed dedupedFeeds = Feed(feed: dedupedFeed, cursor: feed.cursor);
 
       emit(
         currentState.copyWith(
-          authorFeed: feed,
+          authorFeed: dedupedFeeds,
           postsCursor: feed.cursor,
           hasMorePosts: feed.feed.isNotEmpty,
           isLoadingPosts: false,
@@ -65,14 +84,37 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(currentState.copyWith(isLoadingMorePosts: true));
 
     try {
+      final Set<String> seenRootUris = {};
+      final List<FeedView> dedupedFeed = [];
+
       final newFeed = await _blueskyService.getAuthorFeed(
         actorDid,
         cursor: currentState.postsCursor,
       );
 
+      for (final post in currentState.authorFeed!.feed) {
+        if (post.post.record.reply != null) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+        }
+      }
+
+      for (final post in newFeed.feed) {
+        if (post.post.record.reply != null &&
+            !seenRootUris.contains(
+              post.post.record.reply?.root.uri.toString(),
+            )) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+          dedupedFeed.add(post);
+        } else if (post.post.record.reply == null &&
+            !seenRootUris.contains(post.post.uri.toString())) {
+          seenRootUris.add(post.post.uri.toString());
+          dedupedFeed.add(post);
+        }
+      }
+
       final List<FeedView> combinedFeed = [
-        ...currentState.authorFeed?.feed ?? [],
-        ...newFeed.feed,
+        ...currentState.authorFeed!.feed,
+        ...dedupedFeed,
       ];
 
       final Feed combinedFeeds = Feed(

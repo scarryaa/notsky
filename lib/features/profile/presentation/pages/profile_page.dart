@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
@@ -12,6 +13,7 @@ import 'package:notsky/features/post/presentation/components/post/base_post_comp
 import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_state.dart';
+import 'package:notsky/features/thread/presentation/components/thread_component.dart';
 import 'package:notsky/util/util.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -428,29 +430,40 @@ class _ProfilePageState extends State<ProfilePage>
               }
 
               final feedItem = profileState.authorFeed!.feed[index];
-              return Column(
-                children: [
-                  BlocProvider(
-                    create:
-                        (context) => PostCubit(
-                          context.read<AuthCubit>().getBlueskyService(),
-                        ),
-                    child: BasePostComponent(
+              return BlocProvider(
+                create:
+                    (context) => PostCubit(
+                      context.read<AuthCubit>().getBlueskyService(),
+                    ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ThreadComponent(
+                      feedItem: feedItem,
+                      contentLabelPreferences:
+                          context.read<FeedCubit>().contentLabelPreferences,
+                    ),
+                    // Reply post
+                    BasePostComponent(
                       postContent: RegularPost(feedItem.post),
                       reason: feedItem.reason,
                       reply: feedItem.reply,
+                      isReplyToMissingPost:
+                          feedItem.reply?.parent.data is NotFoundPost,
+                      isReplyToBlockedPost:
+                          feedItem.reply?.parent.data is BlockedPost,
                       contentLabelPreferences:
-                          context.read<ProfileCubit>().contentLabelPreferences,
+                          context.read<FeedCubit>().contentLabelPreferences,
                     ),
-                  ),
-                  if (index < profileState.authorFeed!.feed.length - 1)
-                    Divider(
-                      height: 1.0,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outline.withValues(alpha: 0.25),
-                    ),
-                ],
+                    if (index < profileState.authorFeed!.feed.length - 1)
+                      Divider(
+                        height: 1.0,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.25),
+                      ),
+                  ],
+                ),
               );
             },
             // Add +1 for the loading indicator
