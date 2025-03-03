@@ -25,13 +25,6 @@ class NotSkyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => AuthCubit()..checkAuthStatus()),
-        BlocProvider<ProfileCubit>(
-          create: (context) {
-            final bskyService = context.read<AuthCubit>().getBlueskyService();
-
-            return ProfileCubit(bskyService);
-          },
-        ),
         BlocProvider<FeedListCubit>(
           create: (context) {
             return FeedListCubit(

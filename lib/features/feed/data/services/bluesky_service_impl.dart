@@ -326,4 +326,29 @@ class BlueskyServiceImpl implements BlueskyService {
       return PostActionResult(error: e.toString());
     }
   }
+
+  @override
+  Future<Feed> getAuthorFeed(
+    String authorDid, {
+    String? cursor,
+    int? limit,
+  }) async {
+    try {
+      return (await _bluesky.feed.getAuthorFeed(
+        actor: authorDid,
+        cursor: cursor,
+        limit: limit,
+      )).data;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        await _refreshAndUpdateBluesky();
+        return (await _bluesky.feed.getAuthorFeed(
+          actor: authorDid,
+          cursor: cursor,
+          limit: limit,
+        )).data;
+      }
+      rethrow;
+    }
+  }
 }

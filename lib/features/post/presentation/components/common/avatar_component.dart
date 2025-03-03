@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
+import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:notsky/features/profile/presentation/pages/profile_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
 
@@ -28,7 +32,23 @@ class AvatarComponent extends StatelessWidget {
               ? () {
                 Navigator.of(context).push(
                   NoBackgroundCupertinoPageRoute(
-                    builder: (context) => ProfilePage(actorDid: actorDid!),
+                    builder:
+                        (context) => BlocProvider<ProfileCubit>(
+                          create: (context) {
+                            final bskyService =
+                                context.read<AuthCubit>().getBlueskyService();
+
+                            return ProfileCubit(bskyService);
+                          },
+                          child: BlocProvider(
+                            create: (context) {
+                              final bskyService =
+                                  context.read<AuthCubit>().getBlueskyService();
+                              return FeedCubit(bskyService);
+                            },
+                            child: ProfilePage(actorDid: actorDid!),
+                          ),
+                        ),
                   ),
                 );
               }

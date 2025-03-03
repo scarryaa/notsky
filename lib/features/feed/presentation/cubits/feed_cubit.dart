@@ -19,6 +19,17 @@ class FeedCubit extends Cubit<FeedState> {
     } catch (e) {}
   }
 
+  Future<void> loadAuthorFeed(String actorDid) async {
+    emit(FeedLoading());
+
+    try {
+      final feed = await _blueskyService.getAuthorFeed(actorDid);
+      emit(
+        FeedLoaded(feed, cursor: feed.cursor, hasMore: feed.feed.isNotEmpty),
+      );
+    } catch (e) {}
+  }
+
   Future<void> loadFeed({AtUri? generatorUri}) async {
     emit(FeedLoading());
 
