@@ -33,6 +33,108 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  Future<void> loadAuthorMedia(String actorDid) async {
+    if (state is! ProfileLoaded) return;
+
+    final currentState = state as ProfileLoaded;
+    emit(currentState.copyWith(isLoadingPosts: true));
+
+    try {
+      final Set<String> seenRootUris = {};
+      final List<FeedView> dedupedFeed = [];
+
+      final feed = await _blueskyService.getAuthorMedia(actorDid);
+
+      for (final post in feed.feed) {
+        if (post.post.record.reply != null &&
+            !seenRootUris.contains(
+              post.post.record.reply?.root.uri.toString(),
+            )) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+          dedupedFeed.add(post);
+        } else if (post.post.record.reply == null &&
+            !seenRootUris.contains(post.post.uri.toString())) {
+          seenRootUris.add(post.post.uri.toString());
+          dedupedFeed.add(post);
+        }
+      }
+
+      final Feed dedupedFeeds = Feed(feed: dedupedFeed, cursor: feed.cursor);
+
+      emit(
+        currentState.copyWith(
+          mediaFeed: dedupedFeeds,
+          mediaCursor: feed.cursor,
+          hasMorePosts: feed.feed.isNotEmpty,
+          isLoadingPosts: false,
+        ),
+      );
+    } catch (e) {
+      emit(currentState.copyWith(isLoadingPosts: false));
+    }
+  }
+
+  Future<void> loadMoreAuthorMedia(String actorDid) async {
+    if (state is! ProfileLoaded) return;
+
+    final currentState = state as ProfileLoaded;
+
+    if (currentState.isLoadingMorePosts || !currentState.hasMorePosts) return;
+
+    emit(currentState.copyWith(isLoadingMorePosts: true));
+
+    try {
+      final Set<String> seenRootUris = {};
+      final List<FeedView> dedupedFeed = [];
+
+      final newFeed = await _blueskyService.getAuthorMedia(
+        actorDid,
+        cursor: currentState.mediaCursor,
+      );
+
+      for (final post in currentState.mediaFeed!.feed) {
+        if (post.post.record.reply != null) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+        }
+      }
+
+      for (final post in newFeed.feed) {
+        if (post.post.record.reply != null &&
+            !seenRootUris.contains(
+              post.post.record.reply?.root.uri.toString(),
+            )) {
+          seenRootUris.add(post.post.record.reply!.root.uri.toString());
+          dedupedFeed.add(post);
+        } else if (post.post.record.reply == null &&
+            !seenRootUris.contains(post.post.uri.toString())) {
+          seenRootUris.add(post.post.uri.toString());
+          dedupedFeed.add(post);
+        }
+      }
+
+      final List<FeedView> combinedFeed = [
+        ...currentState.mediaFeed!.feed,
+        ...dedupedFeed,
+      ];
+
+      final Feed combinedFeeds = Feed(
+        feed: combinedFeed,
+        cursor: newFeed.cursor,
+      );
+
+      emit(
+        currentState.copyWith(
+          mediaFeed: combinedFeeds,
+          isLoadingMorePosts: false,
+          mediaCursor: newFeed.cursor,
+          hasMorePosts: newFeed.feed.isNotEmpty,
+        ),
+      );
+    } catch (e) {
+      emit(currentState.copyWith(isLoadingMorePosts: false));
+    }
+  }
+
   Future<void> loadAuthorReplies(String actorDid) async {
     if (state is! ProfileLoaded) return;
 

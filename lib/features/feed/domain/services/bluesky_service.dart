@@ -15,6 +15,7 @@ abstract class BlueskyService {
 
   Future<Feed> getAuthorFeed(String authorDid, {String? cursor, int? limit});
   Future<Feed> getAuthorReplies(String authorDid, {String? cursor, int? limit});
+  Future<Feed> getAuthorMedia(String authorDid, {String? cursor, int? limit});
 
   Future<Feed> getFeed({
     required AtUri generatorUri,
