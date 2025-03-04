@@ -145,6 +145,12 @@ class _ProfilePageState extends State<ProfilePage>
           FeedType.media,
         );
         break;
+      case 3:
+        await context.read<ProfileCubit>().loadFeed(
+          widget.actorDid,
+          FeedType.videos,
+        );
+        break;
     }
   }
 
@@ -472,6 +478,19 @@ class _ProfilePageState extends State<ProfilePage>
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
+        if (index == feed.length) {
+          return isLoadingMorePosts
+              ? Center(child: CircularProgressIndicator())
+              : hasMorePosts
+              ? SizedBox.shrink()
+              : Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No more posts to load'),
+                ),
+              );
+        }
+
         // Check if we need to load more posts
         if (index >= feed.length - 5 && hasMorePosts && !isLoadingMorePosts) {
           loadMoreFunction(widget.actorDid);
@@ -609,13 +628,27 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _buildVideosTabSliver() {
-    return SliverToBoxAdapter(
-      child: Center(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: Text('Videos tab content'),
-        ),
-      ),
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      builder: (context, state) {
+        if (state is! ProfileLoaded) {
+          return SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return _buildFeedTabSliver(
+          feedType: 'videos',
+          feed: state.videosFeed?.feed,
+          isLoading: state.isLoadingPosts,
+          hasMorePosts: state.hasMorePosts,
+          isLoadingMorePosts: state.isLoadingMorePosts,
+          loadMoreFunction:
+              (did) => context.read<ProfileCubit>().loadMoreFeed(
+                did,
+                FeedType.videos,
+              ),
+        );
+      },
     );
   }
 

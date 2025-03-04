@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/feed/domain/services/bluesky_service.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_state.dart';
 
-enum FeedType { posts, media, replies }
+enum FeedType { posts, media, replies, videos }
 
 class ProfileCubit extends Cubit<ProfileState> {
   final BlueskyService _blueskyService;
@@ -131,13 +131,16 @@ class ProfileCubit extends Cubit<ProfileState> {
         cursor: newFeed.cursor,
       );
 
+      final bool reachedEndOfFeed =
+          newFeed.feed.isEmpty || newFeed.cursor == null;
+
       emit(
         _updateStateWithFeed(
           currentState,
           feedType,
-          combinedFeeds,
+          newFeed.cursor == null ? Feed(feed: currentFeed.feed) : combinedFeeds,
           newFeed.cursor,
-          newFeed.feed.isNotEmpty,
+          !reachedEndOfFeed,
           false,
           isLoadingMorePosts: false,
         ),
@@ -159,6 +162,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         return await _blueskyService.getAuthorMedia(actorDid, cursor: cursor);
       case FeedType.replies:
         return await _blueskyService.getAuthorReplies(actorDid, cursor: cursor);
+      case FeedType.videos:
+        return await _blueskyService.getAuthorVideos(actorDid, cursor: cursor);
     }
   }
 
@@ -170,6 +175,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         return state.mediaCursor;
       case FeedType.replies:
         return state.repliesCursor;
+      case FeedType.videos:
+        return state.videosCursor;
     }
   }
 
@@ -181,6 +188,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         return state.mediaFeed;
       case FeedType.replies:
         return state.repliesFeed;
+      case FeedType.videos:
+        return state.videosFeed;
     }
   }
 
@@ -214,6 +223,14 @@ class ProfileCubit extends Cubit<ProfileState> {
         return state.copyWith(
           repliesFeed: feed,
           repliesCursor: cursor,
+          hasMorePosts: hasMore,
+          isLoadingPosts: isLoading,
+          isLoadingMorePosts: isLoadingMorePosts,
+        );
+      case FeedType.videos:
+        return state.copyWith(
+          videosFeed: feed,
+          videosCursor: cursor,
           hasMorePosts: hasMore,
           isLoadingPosts: isLoading,
           isLoadingMorePosts: isLoadingMorePosts,
