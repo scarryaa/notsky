@@ -75,7 +75,7 @@ class _ProfilePageState extends State<ProfilePage>
 
         setState(() {});
 
-        context.read<FeedCubit>().loadAuthorFeed(widget.actorDid);
+        loadDataForTab(_tabController.index);
       }
     });
   }
@@ -126,11 +126,13 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Future<void> loadDataForTab(int index) async {
+    setState(() {});
     switch (index) {
       case 0:
         await context.read<FeedCubit>().loadAuthorFeed(widget.actorDid);
         break;
       case 1:
+        await context.read<ProfileCubit>().loadAuthorReplies(widget.actorDid);
         break;
     }
   }
@@ -141,8 +143,8 @@ class _ProfilePageState extends State<ProfilePage>
     bool isOwnProfile,
   ) {
     return RefreshIndicator(
-      onRefresh: () {
-        context.read<ProfileCubit>().getProfile(widget.actorDid);
+      onRefresh: () async {
+        await context.read<ProfileCubit>().getProfile(widget.actorDid);
         return loadDataForTab(_tabController.index);
       },
       child: GestureDetector(
@@ -523,13 +525,99 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _buildRepliesTabSliver() {
-    return SliverToBoxAdapter(
-      child: Center(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: Text('Replies tab content'),
-        ),
-      ),
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      builder: (context, state) {
+        if (state is! ProfileLoaded) {
+          return SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final profileState = state;
+
+        if (profileState.isLoadingPosts) {
+          return SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (profileState.repliesFeed == null ||
+            profileState.repliesFeed!.feed.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Center(child: Text('No replies found')),
+          );
+        }
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              // Check if we need to load more posts
+              if (index >= profileState.repliesFeed!.feed.length - 5 &&
+                  profileState.hasMorePosts &&
+                  !profileState.isLoadingMorePosts) {
+                context.read<ProfileCubit>().loadMoreAuthorReplies(
+                  widget.actorDid,
+                );
+              }
+
+              // Show loading indicator at the end when loading more
+              if (index == profileState.repliesFeed!.feed.length) {
+                return profileState.isLoadingMorePosts
+                    ? Center(child: CircularProgressIndicator())
+                    : SizedBox.shrink();
+              }
+
+              // Don't render beyond the available posts
+              if (index >= profileState.repliesFeed!.feed.length) {
+                return SizedBox.shrink();
+              }
+
+              final feedItem = profileState.repliesFeed!.feed[index];
+              return BlocProvider(
+                create:
+                    (context) => PostCubit(
+                      context.read<AuthCubit>().getBlueskyService(),
+                    ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ThreadComponent(
+                      feedItem: feedItem,
+                      contentLabelPreferences:
+                          context.read<FeedCubit>().contentLabelPreferences,
+                    ),
+                    // Reply post
+                    BasePostComponent(
+                      postContent: RegularPost(feedItem.post),
+                      reason: feedItem.reason,
+                      reply: feedItem.reply,
+                      isReplyToMissingPost:
+                          feedItem.reply?.parent.data is NotFoundPost,
+                      isReplyToBlockedPost:
+                          feedItem.reply?.parent.data is BlockedPost,
+                      contentLabelPreferences:
+                          context.read<FeedCubit>().contentLabelPreferences,
+                    ),
+                    if (index < profileState.repliesFeed!.feed.length - 1)
+                      Divider(
+                        height: 1.0,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.25),
+                      ),
+                  ],
+                ),
+              );
+            },
+            // Add +1 for the loading indicator
+            childCount:
+                profileState.repliesFeed?.feed.length != null
+                    ? profileState.repliesFeed!.feed.length +
+                        (profileState.hasMorePosts ? 1 : 0)
+                    : 0,
+          ),
+        );
+      },
     );
   }
 
