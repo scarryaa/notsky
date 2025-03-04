@@ -396,7 +396,7 @@ class BlueskyServiceImpl implements BlueskyService {
         actor: authorDid,
         cursor: cursor,
         limit: limit,
-        includePins: true,
+        includePins: false,
         filter: FeedFilter.postsWithMedia,
       )).data;
     } catch (e) {
@@ -406,7 +406,7 @@ class BlueskyServiceImpl implements BlueskyService {
           actor: authorDid,
           cursor: cursor,
           limit: limit,
-          includePins: true,
+          includePins: false,
           filter: FeedFilter.postsWithMedia,
         )).data;
       }
@@ -425,7 +425,7 @@ class BlueskyServiceImpl implements BlueskyService {
         actor: authorDid,
         cursor: cursor,
         limit: limit,
-        includePins: true,
+        includePins: false,
         filter: FeedFilter.postsWithVideo,
       )).data;
     } catch (e) {
@@ -435,7 +435,7 @@ class BlueskyServiceImpl implements BlueskyService {
           actor: authorDid,
           cursor: cursor,
           limit: limit,
-          includePins: true,
+          includePins: false,
           filter: FeedFilter.postsWithVideo,
         )).data;
       }

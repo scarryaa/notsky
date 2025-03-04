@@ -612,7 +612,7 @@ class _ProfilePageState extends State<ProfilePage>
         }
 
         return _buildFeedTabSliver(
-          feedType: 'replies',
+          feedType: 'media',
           feed: state.mediaFeed?.feed,
           isLoading: state.isLoadingPosts,
           hasMorePosts: state.hasMorePosts,
