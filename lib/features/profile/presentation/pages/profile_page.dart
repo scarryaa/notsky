@@ -32,10 +32,17 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage>
     with TickerProviderStateMixin {
-  late TabController _tabController;
+  // For some reason this being final fixes the tabController not updating in the build
+  // method, even though it throws an error
+  late final TabController _tabController;
   StreamSubscription? _profileSubscription;
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0.0;
+
+  void _handleTabChange() {
+    setState(() {});
+    loadDataForTab(_tabController.index);
+  }
 
   @override
   void initState() {
@@ -49,47 +56,44 @@ class _ProfilePageState extends State<ProfilePage>
     final isOwnProfile = authState.profile?.did == widget.actorDid;
 
     _tabController = TabController(length: isOwnProfile ? 8 : 4, vsync: this);
-    _tabController.addListener(() {
-      setState(() {});
-    });
+    _tabController.addListener(_handleTabChange);
 
     _profileSubscription = context.read<ProfileCubit>().stream.listen((state) {
       if (state is ProfileLoaded) {
-        setState(() {
-          _tabController.dispose();
-          _tabController = TabController(
-            length:
-                isOwnProfile
-                    ? 8
-                    : 4 +
-                        (state.profile.associated!.feedgens > 0 ? 1 : 0) +
-                        (state.profile.associated!.lists > 0 ? 1 : 0) +
-                        (state.profile.associated!.starterPacks > 0 ? 1 : 0),
-            vsync: this,
-          );
-          _tabController.addListener(() {
-            setState(() {});
-          });
-        });
+        _tabController = TabController(
+          length:
+              isOwnProfile
+                  ? 8
+                  : 4 +
+                      (state.profile.associated!.feedgens > 0 ? 1 : 0) +
+                      (state.profile.associated!.lists > 0 ? 1 : 0) +
+                      (state.profile.associated!.starterPacks > 0 ? 1 : 0),
+          vsync: this,
+          initialIndex: _tabController.index,
+        );
+        _tabController.addListener(_handleTabChange);
+
+        setState(() {});
 
         context.read<FeedCubit>().loadAuthorFeed(widget.actorDid);
       }
     });
   }
 
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _profileSubscription?.cancel();
+    super.dispose();
+  }
+
   void _onScroll() {
     setState(() {
       _scrollOffset = _scrollController.offset;
     });
-  }
-
-  @override
-  void dispose() {
-    _tabController.removeListener(() {});
-    _scrollController.removeListener(_onScroll);
-    _tabController.dispose();
-    _profileSubscription?.cancel();
-    super.dispose();
   }
 
   @override
@@ -121,215 +125,255 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
+  Future<void> loadDataForTab(int index) async {
+    switch (index) {
+      case 0:
+        await context.read<FeedCubit>().loadAuthorFeed(widget.actorDid);
+        break;
+      case 1:
+        break;
+    }
+  }
+
   Widget _buildCustomScrollView(
     ProfileLoaded state,
     AuthSuccess authState,
     bool isOwnProfile,
   ) {
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        SliverToBoxAdapter(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
+    return RefreshIndicator(
+      onRefresh: () {
+        context.read<ProfileCubit>().getProfile(widget.actorDid);
+        return loadDataForTab(_tabController.index);
+      },
+      child: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity! > 0) {
+            // Swipe right - go to previous tab
+            if (_tabController.index > 0) {
+              _handleTabChange();
+              setState(() {
+                _tabController.animateTo(_tabController.index - 1);
+              });
+            }
+          } else if (details.primaryVelocity! < 0) {
+            // Swipe left - go to next tab
+            if (_tabController.index < _tabController.length - 1) {
+              setState(() {
+                _tabController.animateTo(_tabController.index + 1);
+              });
+              _handleTabChange();
+            }
+          }
+        },
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Column(
-                    spacing: 6.0,
+                  Stack(
+                    clipBehavior: Clip.none,
                     children: [
-                      Container(
-                        color: Theme.of(context).primaryColor,
-                        height:
-                            _scrollOffset >
-                                    150 - MediaQuery.of(context).padding.top
-                                ? 150 - MediaQuery.of(context).padding.top
-                                : 150,
-                        child:
-                            state.profile.banner != null &&
-                                    state.profile.banner!.isNotEmpty
-                                ? Image.network(
-                                  state.profile.banner!,
-                                  fit: BoxFit.cover,
-                                )
-                                : null,
+                      Column(
+                        spacing: 6.0,
+                        children: [
+                          Container(
+                            color: Theme.of(context).primaryColor,
+                            height:
+                                _scrollOffset >
+                                        150 - MediaQuery.of(context).padding.top
+                                    ? 150 - MediaQuery.of(context).padding.top
+                                    : 150,
+                            child:
+                                state.profile.banner != null &&
+                                        state.profile.banner!.isNotEmpty
+                                    ? Image.network(
+                                      state.profile.banner!,
+                                      fit: BoxFit.cover,
+                                    )
+                                    : null,
+                          ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Row(
+                              spacing: 6.0,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: _buildProfileButtonsSection(
+                                state,
+                                authState.profile?.did == widget.actorDid,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(12.0, 10.0, 12.0, 0.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildDisplayName(state),
+                                SizedBox(height: 4.0),
+                                Row(
+                                  spacing: 8.0,
+                                  children: [
+                                    if (state.profile.viewer.isFollowedBy)
+                                      _buildFollowsYouTag(context, state),
+                                    _buildHandle(context, state),
+                                  ],
+                                ),
+                                SizedBox(height: 4.0),
+                                Row(
+                                  spacing: 8.0,
+                                  children: [
+                                    _buildFollowersCount(context, state),
+                                    _buildFollowingCount(context, state),
+                                    _buildPostCount(context, state),
+                                  ],
+                                ),
+                                SizedBox(height: 4.0),
+                                Text(
+                                  state.profile.description ?? '',
+                                  softWrap: true,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Row(
-                          spacing: 6.0,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: _buildProfileButtonsSection(
-                            state,
-                            authState.profile?.did == widget.actorDid,
+                      if (widget.showBackButton)
+                        Positioned(
+                          top: 52.0,
+                          left: 8.0,
+                          child: IconButton(
+                            constraints: BoxConstraints(
+                              maxWidth: 32.0,
+                              maxHeight: 32.0,
+                            ),
+                            style: ButtonStyle(
+                              backgroundColor: WidgetStatePropertyAll(
+                                Theme.of(context).colorScheme.surface,
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            icon: Icon(
+                              Icons.arrow_back,
+                              size: 16.0,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(12.0, 10.0, 12.0, 0.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildDisplayName(state),
-                            SizedBox(height: 4.0),
-                            Row(
-                              spacing: 8.0,
-                              children: [
-                                if (state.profile.viewer.isFollowedBy)
-                                  _buildFollowsYouTag(context, state),
-                                _buildHandle(context, state),
-                              ],
-                            ),
-                            SizedBox(height: 4.0),
-                            Row(
-                              spacing: 8.0,
-                              children: [
-                                _buildFollowersCount(context, state),
-                                _buildFollowingCount(context, state),
-                                _buildPostCount(context, state),
-                              ],
-                            ),
-                            SizedBox(height: 4.0),
-                            Text(
-                              state.profile.description ?? '',
-                              softWrap: true,
-                            ),
-                          ],
+                      Positioned(
+                        top:
+                            _scrollOffset >
+                                    150 - MediaQuery.of(context).padding.top
+                                ? 104.0 - MediaQuery.of(context).padding.top
+                                : 104.0,
+                        left: 8.0,
+                        child: AvatarComponent(
+                          actorDid: widget.actorDid,
+                          avatar: state.profile.avatar,
+                          size: 96.0,
                         ),
                       ),
                     ],
                   ),
-                  if (widget.showBackButton)
-                    Positioned(
-                      top: 52.0,
-                      left: 8.0,
-                      child: IconButton(
-                        constraints: BoxConstraints(
-                          maxWidth: 32.0,
-                          maxHeight: 32.0,
+                  SizedBox(height: 8.0),
+                  if (state.profile.viewer.knownFollowers != null)
+                    GestureDetector(
+                      onTap: () {
+                        // TODO
+                      },
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.symmetric(
+                          horizontal: 8.0,
                         ),
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStatePropertyAll(
-                            Theme.of(context).colorScheme.surface,
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        icon: Icon(
-                          Icons.arrow_back,
-                          size: 16.0,
-                          color: Theme.of(context).colorScheme.onSurface,
+                        child: Row(
+                          spacing: 8.0,
+                          children: [
+                            if (!isOwnProfile) _buildKnownFollowers(state),
+                            if (!isOwnProfile)
+                              Flexible(
+                                child: Builder(
+                                  builder: (context) {
+                                    final knownFollowers =
+                                        state.profile.viewer.knownFollowers;
+                                    final followerCount =
+                                        knownFollowers?.count ?? 0;
+                                    final followers =
+                                        knownFollowers?.followers ?? [];
+
+                                    if (followers.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    } else if (followers.length == 1) {
+                                      // Only one follower
+                                      return Text(
+                                        'Followed by ${followers[0].displayName}',
+                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: true,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      );
+                                    } else if (followers.length == 2) {
+                                      // Exactly two followers
+                                      return Text(
+                                        'Followed by ${followers[0].displayName} and ${followers[1].displayName}',
+                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: true,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      );
+                                    } else {
+                                      // More than two followers
+                                      return Text(
+                                        'Followed by ${followers[0].displayName}, ${followers[1].displayName}, and ${followerCount - 2} others',
+                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: true,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                  Positioned(
-                    top:
-                        _scrollOffset > 150 - MediaQuery.of(context).padding.top
-                            ? 104.0 - MediaQuery.of(context).padding.top
-                            : 104.0,
-                    left: 8.0,
-                    child: AvatarComponent(
-                      actorDid: widget.actorDid,
-                      avatar: state.profile.avatar,
-                      size: 96.0,
-                    ),
-                  ),
+                  if (!isOwnProfile) SizedBox(height: 8.0),
                 ],
               ),
-              SizedBox(height: 8.0),
-              if (state.profile.viewer.knownFollowers != null)
-                GestureDetector(
-                  onTap: () {
-                    // TODO
-                  },
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.symmetric(horizontal: 8.0),
-                    child: Row(
-                      spacing: 8.0,
-                      children: [
-                        if (!isOwnProfile) _buildKnownFollowers(state),
-                        if (!isOwnProfile)
-                          Flexible(
-                            child: Builder(
-                              builder: (context) {
-                                final knownFollowers =
-                                    state.profile.viewer.knownFollowers;
-                                final followerCount =
-                                    knownFollowers?.count ?? 0;
-                                final followers =
-                                    knownFollowers?.followers ?? [];
-
-                                if (followers.isEmpty) {
-                                  return const SizedBox.shrink();
-                                } else if (followers.length == 1) {
-                                  // Only one follower
-                                  return Text(
-                                    'Followed by ${followers[0].displayName}',
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: true,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  );
-                                } else if (followers.length == 2) {
-                                  // Exactly two followers
-                                  return Text(
-                                    'Followed by ${followers[0].displayName} and ${followers[1].displayName}',
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: true,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  );
-                                } else {
-                                  // More than two followers
-                                  return Text(
-                                    'Followed by ${followers[0].displayName}, ${followers[1].displayName}, and ${followerCount - 2} others',
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: true,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              if (!isOwnProfile) SizedBox(height: 8.0),
-            ],
-          ),
+            ),
+            SliverPersistentHeader(
+              delegate: _SliverAppBarDelegate(
+                _buildTabBar(state, isOwnProfile),
+                _scrollOffset,
+              ),
+              pinned: true,
+              floating: true,
+            ),
+            SliverVisibility(
+              visible: true,
+              sliver: _getSliver(_tabController.index, isOwnProfile, state),
+            ),
+          ],
         ),
-        SliverPersistentHeader(
-          delegate: _SliverAppBarDelegate(
-            _buildTabBar(state, isOwnProfile),
-            _scrollOffset,
-          ),
-          pinned: true,
-          floating: true,
-        ),
-        SliverVisibility(
-          visible: true,
-          sliver: _getSliver(_tabController.index, isOwnProfile, state),
-        ),
-      ],
+      ),
     );
   }
 
