@@ -39,10 +39,10 @@ class _ProfilePageState extends State<ProfilePage>
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0.0;
 
-  void _handleTabChange() {
+  void _handleTabChange(bool isOwnProfile) {
     if (_tabController.indexIsChanging) {
       setState(() {});
-      loadDataForTab(_tabController.index);
+      loadDataForTab(isOwnProfile, _tabController.index);
     }
   }
 
@@ -58,7 +58,7 @@ class _ProfilePageState extends State<ProfilePage>
     final isOwnProfile = authState.profile?.did == widget.actorDid;
 
     _tabController = TabController(length: isOwnProfile ? 8 : 4, vsync: this);
-    _tabController.addListener(_handleTabChange);
+    _tabController.addListener(() => _handleTabChange(isOwnProfile));
 
     _profileSubscription = context.read<ProfileCubit>().stream.listen((state) {
       if (state is ProfileLoaded) {
@@ -81,7 +81,7 @@ class _ProfilePageState extends State<ProfilePage>
 
   @override
   void dispose() {
-    _tabController.removeListener(_handleTabChange);
+    _tabController.removeListener(() => _handleTabChange(false));
     _tabController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
@@ -124,7 +124,7 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  Future<void> loadDataForTab(int index) async {
+  Future<void> loadDataForTab(bool isOwnProfile, int index) async {
     setState(() {});
     switch (index) {
       case 0:
@@ -152,6 +152,17 @@ class _ProfilePageState extends State<ProfilePage>
         );
         break;
     }
+
+    if (isOwnProfile) {
+      switch (index) {
+        case 4:
+          await context.read<ProfileCubit>().loadFeed(
+            widget.actorDid,
+            FeedType.likes,
+          );
+          break;
+      }
+    } else {}
   }
 
   Widget _buildCustomScrollView(
@@ -162,7 +173,7 @@ class _ProfilePageState extends State<ProfilePage>
     return RefreshIndicator(
       onRefresh: () async {
         await context.read<ProfileCubit>().getProfile(widget.actorDid);
-        return loadDataForTab(_tabController.index);
+        return loadDataForTab(isOwnProfile, _tabController.index);
       },
       child: GestureDetector(
         onHorizontalDragEnd: (details) {
@@ -653,13 +664,27 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _buildLikesTabSliver() {
-    return SliverToBoxAdapter(
-      child: Center(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: Text('Likes tab content'),
-        ),
-      ),
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      builder: (context, state) {
+        if (state is! ProfileLoaded) {
+          return SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return _buildFeedTabSliver(
+          feedType: 'likes',
+          feed: state.likesFeed?.feed,
+          isLoading: state.isLoadingPosts,
+          hasMorePosts: state.hasMorePosts,
+          isLoadingMorePosts: state.isLoadingMorePosts,
+          loadMoreFunction:
+              (did) => context.read<ProfileCubit>().loadMoreFeed(
+                did,
+                FeedType.likes,
+              ),
+        );
+      },
     );
   }
 

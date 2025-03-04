@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/feed/domain/services/bluesky_service.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_state.dart';
 
-enum FeedType { posts, media, replies, videos }
+enum FeedType { posts, media, replies, videos, likes }
 
 class ProfileCubit extends Cubit<ProfileState> {
   final BlueskyService _blueskyService;
@@ -164,6 +164,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         return await _blueskyService.getAuthorReplies(actorDid, cursor: cursor);
       case FeedType.videos:
         return await _blueskyService.getAuthorVideos(actorDid, cursor: cursor);
+      case FeedType.likes:
+        return await _blueskyService.getActorLikes(actorDid, cursor: cursor);
     }
   }
 
@@ -177,6 +179,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         return state.repliesCursor;
       case FeedType.videos:
         return state.videosCursor;
+      case FeedType.likes:
+        return state.likesCursor;
     }
   }
 
@@ -190,6 +194,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         return state.repliesFeed;
       case FeedType.videos:
         return state.videosFeed;
+      case FeedType.likes:
+        return state.likesFeed;
     }
   }
 
@@ -231,6 +237,14 @@ class ProfileCubit extends Cubit<ProfileState> {
         return state.copyWith(
           videosFeed: feed,
           videosCursor: cursor,
+          hasMorePosts: hasMore,
+          isLoadingPosts: isLoading,
+          isLoadingMorePosts: isLoadingMorePosts,
+        );
+      case FeedType.likes:
+        return state.copyWith(
+          likesFeed: feed,
+          likesCursor: cursor,
           hasMorePosts: hasMore,
           isLoadingPosts: isLoading,
           isLoadingMorePosts: isLoadingMorePosts,

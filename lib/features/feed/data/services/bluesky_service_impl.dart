@@ -442,4 +442,29 @@ class BlueskyServiceImpl implements BlueskyService {
       rethrow;
     }
   }
+
+  @override
+  Future<Feed> getActorLikes(
+    String authorDid, {
+    String? cursor,
+    int? limit,
+  }) async {
+    try {
+      return (await _bluesky.feed.getActorLikes(
+        actor: authorDid,
+        cursor: cursor,
+        limit: limit,
+      )).data;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        await _refreshAndUpdateBluesky();
+        return (await _bluesky.feed.getActorLikes(
+          actor: authorDid,
+          cursor: cursor,
+          limit: limit,
+        )).data;
+      }
+      rethrow;
+    }
+  }
 }
