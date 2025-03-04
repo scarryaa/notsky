@@ -430,6 +430,89 @@ class _ProfilePageState extends State<ProfilePage>
     }
   }
 
+  Widget _buildFeedTabSliver({
+    required String feedType,
+    required List<FeedView>? feed,
+    required bool isLoading,
+    required bool hasMorePosts,
+    required bool isLoadingMorePosts,
+    required Function(String) loadMoreFunction,
+  }) {
+    if (isLoading) {
+      return SliverToBoxAdapter(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (feed == null || feed.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(child: Text('No $feedType found')),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        // Check if we need to load more posts
+        if (index >= feed.length - 5 && hasMorePosts && !isLoadingMorePosts) {
+          loadMoreFunction(widget.actorDid);
+        }
+
+        // Show loading indicator at the end when loading more
+        if (index == feed.length) {
+          return isLoadingMorePosts
+              ? Center(child: CircularProgressIndicator())
+              : SizedBox.shrink();
+        }
+
+        // Don't render beyond the available posts
+        if (index >= feed.length) {
+          return SizedBox.shrink();
+        }
+
+        final feedItem = feed[index];
+        return _buildFeedItem(context, feedItem, index, feed.length);
+      }, childCount: feed.length + (hasMorePosts ? 1 : 0)),
+    );
+  }
+
+  Widget _buildFeedItem(
+    BuildContext context,
+    FeedView feedItem,
+    int index,
+    int totalItems,
+  ) {
+    return BlocProvider(
+      create:
+          (context) => PostCubit(context.read<AuthCubit>().getBlueskyService()),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ThreadComponent(
+            feedItem: feedItem,
+            contentLabelPreferences:
+                context.read<FeedCubit>().contentLabelPreferences,
+          ),
+          BasePostComponent(
+            postContent: RegularPost(feedItem.post),
+            reason: feedItem.reason,
+            reply: feedItem.reply,
+            isReplyToMissingPost: feedItem.reply?.parent.data is NotFoundPost,
+            isReplyToBlockedPost: feedItem.reply?.parent.data is BlockedPost,
+            contentLabelPreferences:
+                context.read<FeedCubit>().contentLabelPreferences,
+          ),
+          if (index < totalItems - 1)
+            Divider(
+              height: 1.0,
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: 0.25),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPostsTabSliver() {
     return BlocBuilder<ProfileCubit, ProfileState>(
       builder: (context, state) {
@@ -439,89 +522,14 @@ class _ProfilePageState extends State<ProfilePage>
           );
         }
 
-        final profileState = state;
-
-        if (profileState.isLoadingPosts) {
-          return SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (profileState.authorFeed == null ||
-            profileState.authorFeed!.feed.isEmpty) {
-          return SliverToBoxAdapter(
-            child: Center(child: Text('No posts found')),
-          );
-        }
-
-        return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              // Check if we need to load more posts
-              if (index >= profileState.authorFeed!.feed.length - 5 &&
-                  profileState.hasMorePosts &&
-                  !profileState.isLoadingMorePosts) {
-                context.read<ProfileCubit>().loadMoreAuthorPosts(
-                  widget.actorDid,
-                );
-              }
-
-              // Show loading indicator at the end when loading more
-              if (index == profileState.authorFeed!.feed.length) {
-                return profileState.isLoadingMorePosts
-                    ? Center(child: CircularProgressIndicator())
-                    : SizedBox.shrink();
-              }
-
-              // Don't render beyond the available posts
-              if (index >= profileState.authorFeed!.feed.length) {
-                return SizedBox.shrink();
-              }
-
-              final feedItem = profileState.authorFeed!.feed[index];
-              return BlocProvider(
-                create:
-                    (context) => PostCubit(
-                      context.read<AuthCubit>().getBlueskyService(),
-                    ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ThreadComponent(
-                      feedItem: feedItem,
-                      contentLabelPreferences:
-                          context.read<FeedCubit>().contentLabelPreferences,
-                    ),
-                    // Reply post
-                    BasePostComponent(
-                      postContent: RegularPost(feedItem.post),
-                      reason: feedItem.reason,
-                      reply: feedItem.reply,
-                      isReplyToMissingPost:
-                          feedItem.reply?.parent.data is NotFoundPost,
-                      isReplyToBlockedPost:
-                          feedItem.reply?.parent.data is BlockedPost,
-                      contentLabelPreferences:
-                          context.read<FeedCubit>().contentLabelPreferences,
-                    ),
-                    if (index < profileState.authorFeed!.feed.length - 1)
-                      Divider(
-                        height: 1.0,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.25),
-                      ),
-                  ],
-                ),
-              );
-            },
-            // Add +1 for the loading indicator
-            childCount:
-                profileState.authorFeed?.feed.length != null
-                    ? profileState.authorFeed!.feed.length +
-                        (profileState.hasMorePosts ? 1 : 0)
-                    : 0,
-          ),
+        return _buildFeedTabSliver(
+          feedType: 'posts',
+          feed: state.authorFeed?.feed,
+          isLoading: state.isLoadingPosts,
+          hasMorePosts: state.hasMorePosts,
+          isLoadingMorePosts: state.isLoadingMorePosts,
+          loadMoreFunction:
+              (did) => context.read<ProfileCubit>().loadMoreAuthorPosts(did),
         );
       },
     );
@@ -536,89 +544,14 @@ class _ProfilePageState extends State<ProfilePage>
           );
         }
 
-        final profileState = state;
-
-        if (profileState.isLoadingPosts) {
-          return SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (profileState.repliesFeed == null ||
-            profileState.repliesFeed!.feed.isEmpty) {
-          return SliverToBoxAdapter(
-            child: Center(child: Text('No replies found')),
-          );
-        }
-
-        return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              // Check if we need to load more posts
-              if (index >= profileState.repliesFeed!.feed.length - 5 &&
-                  profileState.hasMorePosts &&
-                  !profileState.isLoadingMorePosts) {
-                context.read<ProfileCubit>().loadMoreAuthorReplies(
-                  widget.actorDid,
-                );
-              }
-
-              // Show loading indicator at the end when loading more
-              if (index == profileState.repliesFeed!.feed.length) {
-                return profileState.isLoadingMorePosts
-                    ? Center(child: CircularProgressIndicator())
-                    : SizedBox.shrink();
-              }
-
-              // Don't render beyond the available posts
-              if (index >= profileState.repliesFeed!.feed.length) {
-                return SizedBox.shrink();
-              }
-
-              final feedItem = profileState.repliesFeed!.feed[index];
-              return BlocProvider(
-                create:
-                    (context) => PostCubit(
-                      context.read<AuthCubit>().getBlueskyService(),
-                    ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ThreadComponent(
-                      feedItem: feedItem,
-                      contentLabelPreferences:
-                          context.read<FeedCubit>().contentLabelPreferences,
-                    ),
-                    // Reply post
-                    BasePostComponent(
-                      postContent: RegularPost(feedItem.post),
-                      reason: feedItem.reason,
-                      reply: feedItem.reply,
-                      isReplyToMissingPost:
-                          feedItem.reply?.parent.data is NotFoundPost,
-                      isReplyToBlockedPost:
-                          feedItem.reply?.parent.data is BlockedPost,
-                      contentLabelPreferences:
-                          context.read<FeedCubit>().contentLabelPreferences,
-                    ),
-                    if (index < profileState.repliesFeed!.feed.length - 1)
-                      Divider(
-                        height: 1.0,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.25),
-                      ),
-                  ],
-                ),
-              );
-            },
-            // Add +1 for the loading indicator
-            childCount:
-                profileState.repliesFeed?.feed.length != null
-                    ? profileState.repliesFeed!.feed.length +
-                        (profileState.hasMorePosts ? 1 : 0)
-                    : 0,
-          ),
+        return _buildFeedTabSliver(
+          feedType: 'replies',
+          feed: state.repliesFeed?.feed,
+          isLoading: state.isLoadingPosts,
+          hasMorePosts: state.hasMorePosts,
+          isLoadingMorePosts: state.isLoadingMorePosts,
+          loadMoreFunction:
+              (did) => context.read<ProfileCubit>().loadMoreAuthorReplies(did),
         );
       },
     );
@@ -633,89 +566,14 @@ class _ProfilePageState extends State<ProfilePage>
           );
         }
 
-        final profileState = state;
-
-        if (profileState.isLoadingPosts) {
-          return SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (profileState.mediaFeed == null ||
-            profileState.mediaFeed!.feed.isEmpty) {
-          return SliverToBoxAdapter(
-            child: Center(child: Text('No media found')),
-          );
-        }
-
-        return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              // Check if we need to load more posts
-              if (index >= profileState.mediaFeed!.feed.length - 5 &&
-                  profileState.hasMorePosts &&
-                  !profileState.isLoadingMorePosts) {
-                context.read<ProfileCubit>().loadMoreAuthorMedia(
-                  widget.actorDid,
-                );
-              }
-
-              // Show loading indicator at the end when loading more
-              if (index == profileState.mediaFeed!.feed.length) {
-                return profileState.isLoadingMorePosts
-                    ? Center(child: CircularProgressIndicator())
-                    : SizedBox.shrink();
-              }
-
-              // Don't render beyond the available posts
-              if (index >= profileState.mediaFeed!.feed.length) {
-                return SizedBox.shrink();
-              }
-
-              final feedItem = profileState.mediaFeed!.feed[index];
-              return BlocProvider(
-                create:
-                    (context) => PostCubit(
-                      context.read<AuthCubit>().getBlueskyService(),
-                    ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ThreadComponent(
-                      feedItem: feedItem,
-                      contentLabelPreferences:
-                          context.read<FeedCubit>().contentLabelPreferences,
-                    ),
-                    // Reply post
-                    BasePostComponent(
-                      postContent: RegularPost(feedItem.post),
-                      reason: feedItem.reason,
-                      reply: feedItem.reply,
-                      isReplyToMissingPost:
-                          feedItem.reply?.parent.data is NotFoundPost,
-                      isReplyToBlockedPost:
-                          feedItem.reply?.parent.data is BlockedPost,
-                      contentLabelPreferences:
-                          context.read<FeedCubit>().contentLabelPreferences,
-                    ),
-                    if (index < profileState.mediaFeed!.feed.length - 1)
-                      Divider(
-                        height: 1.0,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.25),
-                      ),
-                  ],
-                ),
-              );
-            },
-            // Add +1 for the loading indicator
-            childCount:
-                profileState.mediaFeed?.feed.length != null
-                    ? profileState.mediaFeed!.feed.length +
-                        (profileState.hasMorePosts ? 1 : 0)
-                    : 0,
-          ),
+        return _buildFeedTabSliver(
+          feedType: 'replies',
+          feed: state.mediaFeed?.feed,
+          isLoading: state.isLoadingPosts,
+          hasMorePosts: state.hasMorePosts,
+          isLoadingMorePosts: state.isLoadingMorePosts,
+          loadMoreFunction:
+              (did) => context.read<ProfileCubit>().loadMoreAuthorMedia(did),
         );
       },
     );
