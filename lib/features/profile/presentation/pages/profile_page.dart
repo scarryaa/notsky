@@ -40,8 +40,10 @@ class _ProfilePageState extends State<ProfilePage>
   double _scrollOffset = 0.0;
 
   void _handleTabChange() {
-    setState(() {});
-    loadDataForTab(_tabController.index);
+    if (_tabController.indexIsChanging) {
+      setState(() {});
+      loadDataForTab(_tabController.index);
+    }
   }
 
   @override
@@ -71,11 +73,8 @@ class _ProfilePageState extends State<ProfilePage>
           vsync: this,
           initialIndex: _tabController.index,
         );
-        _tabController.addListener(_handleTabChange);
 
         setState(() {});
-
-        loadDataForTab(_tabController.index);
       }
     });
   }
@@ -129,13 +128,22 @@ class _ProfilePageState extends State<ProfilePage>
     setState(() {});
     switch (index) {
       case 0:
-        await context.read<FeedCubit>().loadAuthorFeed(widget.actorDid);
+        await context.read<ProfileCubit>().loadFeed(
+          widget.actorDid,
+          FeedType.posts,
+        );
         break;
       case 1:
-        await context.read<ProfileCubit>().loadAuthorReplies(widget.actorDid);
+        await context.read<ProfileCubit>().loadFeed(
+          widget.actorDid,
+          FeedType.replies,
+        );
         break;
       case 2:
-        await context.read<ProfileCubit>().loadAuthorMedia(widget.actorDid);
+        await context.read<ProfileCubit>().loadFeed(
+          widget.actorDid,
+          FeedType.media,
+        );
         break;
     }
   }
@@ -155,7 +163,6 @@ class _ProfilePageState extends State<ProfilePage>
           if (details.primaryVelocity! > 0) {
             // Swipe right - go to previous tab
             if (_tabController.index > 0) {
-              _handleTabChange();
               setState(() {
                 _tabController.animateTo(_tabController.index - 1);
               });
@@ -166,7 +173,6 @@ class _ProfilePageState extends State<ProfilePage>
               setState(() {
                 _tabController.animateTo(_tabController.index + 1);
               });
-              _handleTabChange();
             }
           }
         },
@@ -430,6 +436,24 @@ class _ProfilePageState extends State<ProfilePage>
     }
   }
 
+  Widget _buildTabLoadingSliver() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 24.0),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+
+  Widget _buildEmptyTabSliver(String feedType) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 24.0),
+        child: Center(child: Text('No $feedType found')),
+      ),
+    );
+  }
+
   Widget _buildFeedTabSliver({
     required String feedType,
     required List<FeedView>? feed,
@@ -439,15 +463,11 @@ class _ProfilePageState extends State<ProfilePage>
     required Function(String) loadMoreFunction,
   }) {
     if (isLoading) {
-      return SliverToBoxAdapter(
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return _buildTabLoadingSliver();
     }
 
     if (feed == null || feed.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Center(child: Text('No $feedType found')),
-      );
+      return _buildEmptyTabSliver(feedType);
     }
 
     return SliverList(
@@ -529,7 +549,10 @@ class _ProfilePageState extends State<ProfilePage>
           hasMorePosts: state.hasMorePosts,
           isLoadingMorePosts: state.isLoadingMorePosts,
           loadMoreFunction:
-              (did) => context.read<ProfileCubit>().loadMoreAuthorPosts(did),
+              (did) => context.read<ProfileCubit>().loadMoreFeed(
+                did,
+                FeedType.posts,
+              ),
         );
       },
     );
@@ -551,7 +574,10 @@ class _ProfilePageState extends State<ProfilePage>
           hasMorePosts: state.hasMorePosts,
           isLoadingMorePosts: state.isLoadingMorePosts,
           loadMoreFunction:
-              (did) => context.read<ProfileCubit>().loadMoreAuthorReplies(did),
+              (did) => context.read<ProfileCubit>().loadMoreFeed(
+                did,
+                FeedType.replies,
+              ),
         );
       },
     );
@@ -573,7 +599,10 @@ class _ProfilePageState extends State<ProfilePage>
           hasMorePosts: state.hasMorePosts,
           isLoadingMorePosts: state.isLoadingMorePosts,
           loadMoreFunction:
-              (did) => context.read<ProfileCubit>().loadMoreAuthorMedia(did),
+              (did) => context.read<ProfileCubit>().loadMoreFeed(
+                did,
+                FeedType.media,
+              ),
         );
       },
     );
