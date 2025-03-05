@@ -344,6 +344,8 @@ class _ProfilePageState extends State<ProfilePage>
                           actorDid: widget.actorDid,
                           avatar: state.profile.avatar,
                           size: 96.0,
+                          clickable: false,
+                          fullscreenable: true,
                         ),
                       ),
                     ],

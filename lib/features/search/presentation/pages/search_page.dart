@@ -75,6 +75,8 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool canPop = Navigator.canPop(context);
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size(double.infinity, 60.0),
@@ -104,7 +106,7 @@ class _SearchPageState extends State<SearchPage> {
               ),
         ),
       ),
-      drawer: _buildDrawer(),
+      drawer: canPop ? null : _buildDrawer(),
       body: Column(
         children: [
           Container(

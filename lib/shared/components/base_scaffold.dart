@@ -108,7 +108,10 @@ class _BaseScaffoldState extends State<BaseScaffold> {
                             _selectedIndex == 4
                         ? null
                         : _buildAppBar(_getTitleForIndex(_selectedIndex)),
-                drawer: _selectedIndex == 0 ? null : _buildDrawer(),
+                drawer:
+                    (_selectedIndex == 0 || _selectedIndex == 1)
+                        ? null
+                        : _buildDrawer(),
                 body: Stack(
                   children: [
                     _buildOffstageNavigator(

@@ -1,10 +1,14 @@
+import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
+import 'package:notsky/features/post/presentation/components/media/image_detail_screen.dart';
+import 'package:notsky/features/post/presentation/controllers/bottom_nav_visibility_controller.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:notsky/features/profile/presentation/pages/profile_page.dart';
 import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
+import 'package:provider/provider.dart';
 
 class AvatarComponent extends StatelessWidget {
   const AvatarComponent({
@@ -13,12 +17,14 @@ class AvatarComponent extends StatelessWidget {
     required this.avatar,
     required this.size,
     this.clickable = true,
+    this.fullscreenable = false,
   });
 
   final String? actorDid;
   final String? avatar;
   final double size;
   final bool clickable;
+  final bool fullscreenable;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +54,33 @@ class AvatarComponent extends StatelessWidget {
                             },
                             child: ProfilePage(actorDid: actorDid!),
                           ),
+                        ),
+                  ),
+                );
+              }
+              : fullscreenable
+              ? () {
+                final navController =
+                    Provider.of<BottomNavVisibilityController>(
+                      context,
+                      listen: false,
+                    );
+                navController.hide();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (context) => ImageDetailScreen(
+                          images: [
+                            EmbedViewImagesView(
+                              thumbnail: avatar ?? '',
+                              fullsize: avatar ?? '',
+                              alt: '',
+                            ),
+                          ],
+                          initialIndex: 0,
+                          onExit: () {
+                            navController.show();
+                          },
                         ),
                   ),
                 );
