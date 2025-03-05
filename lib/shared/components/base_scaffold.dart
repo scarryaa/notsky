@@ -192,9 +192,14 @@ class _BaseScaffoldState extends State<BaseScaffold> {
                                       Theme.of(context).colorScheme.surface,
                                   height: constrainedBarHeight,
                                   onDestinationSelected: (int index) {
-                                    setState(() {
-                                      _selectedIndex = index;
-                                    });
+                                    if (_selectedIndex == index) {
+                                      _navigatorKeys[index].currentState
+                                          ?.popUntil((route) => route.isFirst);
+                                    } else {
+                                      setState(() {
+                                        _selectedIndex = index;
+                                      });
+                                    }
                                   },
                                   selectedIndex: _selectedIndex,
                                   labelBehavior:
