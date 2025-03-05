@@ -30,6 +30,42 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
+  Future<List<Actor>> searchActors(String term, {int? limit}) async {
+    try {
+      final response = await _bluesky.actor.searchActors(
+        term: term,
+        limit: limit,
+      );
+      return response.data.actors;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        await _refreshAndUpdateBluesky();
+        final response = await _bluesky.actor.searchActors(
+          term: term,
+          limit: limit,
+        );
+        return response.data.actors;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<Post>> searchPosts(String term, {int? limit}) async {
+    try {
+      final response = await _bluesky.feed.searchPosts(term, limit: limit);
+      return response.data.posts;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        await _refreshAndUpdateBluesky();
+        final response = await _bluesky.feed.searchPosts(term, limit: limit);
+        return response.data.posts;
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<Feed> getTimeline({
     Map<String, String>? headers,
     String? cursor,

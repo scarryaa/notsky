@@ -38,6 +38,9 @@ abstract class BlueskyService {
   Future<List<SavedFeedsPrefV2>> getSavedFeedsPreferenceV2();
   Future<List<SavedFeedsPreference>> getSavedFeedsPreference();
 
+  Future<List<Actor>> searchActors(String term, {int? limit});
+  Future<List<Post>> searchPosts(String term, {int? limit});
+
   Future<PostActionResult> like(String cid, AtUri uri);
   Future<PostActionResult> deleteRecord(AtUri uri);
   Future<PostActionResult> post(String text);
