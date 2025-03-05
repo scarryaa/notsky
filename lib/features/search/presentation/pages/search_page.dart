@@ -2,6 +2,7 @@ import 'package:bluesky/bluesky.dart' hide ListView;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
 import 'package:notsky/features/profile/presentation/pages/profile_page.dart';
 import 'dart:async';
 
@@ -34,6 +35,13 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
+  Widget _buildDrawer() {
+    return Container(
+      width: 350.0,
+      color: Theme.of(context).colorScheme.surfaceContainer,
+    );
+  }
+
   Future<void> _performSearch() async {
     if (_searchQuery.isEmpty) {
       _clearSearch();
@@ -64,89 +72,123 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color:
-                    _searchQuery.isNotEmpty
-                        ? Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.25)
-                        : Colors.transparent,
-              ),
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search users, posts, or topics...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 8.0,
-                horizontal: 8.0,
-              ),
-              suffixIcon:
-                  _searchQuery.isNotEmpty
-                      ? IconButton(
-                        icon: const Icon(Icons.clear, size: 20.0),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchQuery = '';
-                          });
-                          _clearSearch();
-                        },
-                      )
-                      : null,
-            ),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-
-              if (_debounce?.isActive ?? false) _debounce!.cancel();
-              _debounce = Timer(const Duration(milliseconds: 500), () {
-                if (_searchQuery.isNotEmpty) {
-                  _performSearch();
-                } else {
-                  _clearSearch();
-                }
-              });
-            },
-          ),
-        ),
-        if (_isLoading) const Center(child: CircularProgressIndicator()),
-        if (_errorMessage != null)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              _errorMessage!,
-              style: const TextStyle(color: Colors.red),
-            ),
-          ),
-        Expanded(
-          child:
-              _searchQuery.isEmpty
-                  ? const Center(child: Text('Enter a search term'))
-                  : _searchResults.isEmpty && !_isLoading
-                  ? const Center(child: Text('No results found'))
-                  : ListView.builder(
-                    itemCount: _searchResults.length + 1,
-                    itemBuilder: (context, index) {
-                      return index == 0
-                          ? _buildSearchPlaceholder(_searchQuery)
-                          : _buildSearchResultItem(_searchResults[index - 1]);
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size(double.infinity, 60.0),
+        child: Builder(
+          builder:
+              (context) => Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.25),
+                    ),
+                  ),
+                ),
+                child: AppBar(
+                  leading: IconButton(
+                    icon: Icon(Icons.menu),
+                    onPressed: () {
+                      Scaffold.of(context).openDrawer();
                     },
                   ),
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  scrolledUnderElevation: 0,
+                  title: Text('Search'),
+                ),
+              ),
         ),
-      ],
+      ),
+      drawer: _buildDrawer(),
+      body: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color:
+                      _searchQuery.isNotEmpty
+                          ? Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.25)
+                          : Colors.transparent,
+                ),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search users, posts, or topics...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 8.0,
+                  horizontal: 8.0,
+                ),
+                suffixIcon:
+                    _searchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20.0),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                            _clearSearch();
+                          },
+                        )
+                        : null,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+
+                if (_debounce?.isActive ?? false) _debounce!.cancel();
+                _debounce = Timer(const Duration(milliseconds: 500), () {
+                  if (_searchQuery.isNotEmpty) {
+                    _performSearch();
+                  } else {
+                    _clearSearch();
+                  }
+                });
+              },
+            ),
+          ),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
+          if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          Expanded(
+            child:
+                _searchQuery.isEmpty
+                    ? const Center(child: Text('Enter a search term'))
+                    : _searchResults.isEmpty && !_isLoading
+                    ? const Center(child: Text('No results found'))
+                    : ListView.builder(
+                      itemCount: _searchResults.length + 1,
+                      itemBuilder: (context, index) {
+                        return index == 0
+                            ? _buildSearchPlaceholder(_searchQuery)
+                            : _buildSearchResultItem(_searchResults[index - 1]);
+                      },
+                    ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -192,7 +234,19 @@ class _SearchPageState extends State<SearchPage> {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => ProfilePage(actorDid: actor.did),
+            builder: (context) {
+              final blueskyService =
+                  context.read<AuthCubit>().getBlueskyService();
+
+              return BlocProvider<FeedCubit>(
+                create: (context) => FeedCubit(blueskyService),
+                child: Builder(
+                  builder: (context) {
+                    return ProfilePage(actorDid: actor.did);
+                  },
+                ),
+              );
+            },
           ),
         );
       },

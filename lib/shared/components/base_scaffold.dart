@@ -103,7 +103,9 @@ class _BaseScaffoldState extends State<BaseScaffold> {
             child: PopScope(
               child: Scaffold(
                 appBar:
-                    _selectedIndex == 0 || _selectedIndex == 4
+                    _selectedIndex == 0 ||
+                            _selectedIndex == 1 ||
+                            _selectedIndex == 4
                         ? null
                         : _buildAppBar(_getTitleForIndex(_selectedIndex)),
                 drawer: _selectedIndex == 0 ? null : _buildDrawer(),
