@@ -50,6 +50,13 @@ class QuotedPostRenderer {
         return _buildQuoteListView(context, quoteEmbed.record.data as ListView);
       }
 
+      if ((quoteEmbed.record.data is FeedGeneratorView)) {
+        return _buildQuoteFeedGeneratorView(
+          context,
+          quoteEmbed.record.data as FeedGeneratorView,
+        );
+      }
+
       final quotedRecord =
           (quoteEmbed.record).data as EmbedViewRecordViewRecord;
       return _buildQuotePostView(
@@ -60,6 +67,95 @@ class QuotedPostRenderer {
     }
 
     return const SizedBox.shrink();
+  }
+
+  static Widget _buildQuoteFeedGeneratorView(
+    BuildContext context,
+    FeedGeneratorView feedGenerator,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        // TODO: Navigate to feed generator
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 8.0),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
+          ),
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  SizedBox(
+                    width: 30.0,
+                    height: 30.0,
+                    child:
+                        feedGenerator.avatar != null &&
+                                feedGenerator.avatar!.isNotEmpty
+                            ? Image.network(feedGenerator.avatar!)
+                            : Icon(Icons.rss_feed, size: 24.0),
+                  ),
+                  const SizedBox(width: 8.0),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          feedGenerator.displayName,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'Feed by @${feedGenerator.createdBy.handle}',
+                          style: const TextStyle(fontSize: 12.5),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (feedGenerator.description != null &&
+                  feedGenerator.description!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    feedGenerator.description!,
+                    style: const TextStyle(fontSize: 12.5),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 2.0),
+                child: Row(
+                  children: [
+                    Text(
+                      'Liked by ${feedGenerator.likeCount} users',
+                      style: TextStyle(
+                        fontSize: 12.0,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   static Widget _buildQuoteListView(BuildContext context, ListView listView) {

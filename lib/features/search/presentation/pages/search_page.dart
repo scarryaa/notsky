@@ -6,6 +6,8 @@ import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
 import 'package:notsky/features/profile/presentation/pages/profile_page.dart';
 import 'dart:async';
 
+import 'package:notsky/shared/components/no_background_cupertino_page_route.dart';
+
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
 
@@ -233,7 +235,7 @@ class _SearchPageState extends State<SearchPage> {
       subtitle: Text('@${actor.handle}'),
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
+          NoBackgroundCupertinoPageRoute(
             builder: (context) {
               final blueskyService =
                   context.read<AuthCubit>().getBlueskyService();
