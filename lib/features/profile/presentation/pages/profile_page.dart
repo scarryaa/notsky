@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:atproto_core/atproto_core.dart';
 import 'package:bluesky/bluesky.dart' hide Image;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,7 @@ import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_state.dart';
 import 'package:notsky/features/thread/presentation/components/thread_component.dart';
+import 'package:notsky/shared/components/author_feed_item_component.dart';
 import 'package:notsky/util/util.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -32,17 +34,17 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage>
     with TickerProviderStateMixin {
-  // For some reason this being final fixes the tabController not updating in the build
-  // method, even though it throws an error
-  late final TabController _tabController;
+  TabController? _tabController;
   StreamSubscription? _profileSubscription;
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0.0;
+  late final SavedFeedsPreference savedFeedsPreference;
+  late final SavedFeedsPrefV2 savedFeedsPrefV2;
 
   void _handleTabChange(bool isOwnProfile) {
-    if (_tabController.indexIsChanging) {
+    if (_tabController!.indexIsChanging) {
       setState(() {});
-      loadDataForTab(isOwnProfile, _tabController.index);
+      loadDataForTab(isOwnProfile, _tabController!.index);
     }
   }
 
@@ -57,11 +59,12 @@ class _ProfilePageState extends State<ProfilePage>
     final authState = context.read<AuthCubit>().state as AuthSuccess;
     final isOwnProfile = authState.profile?.did == widget.actorDid;
 
-    _tabController = TabController(length: isOwnProfile ? 8 : 4, vsync: this);
-    _tabController.addListener(() => _handleTabChange(isOwnProfile));
+    // Move async operations to a separate method
+    _loadSavedFeedsPreferences();
 
+    bool loaded = false;
     _profileSubscription = context.read<ProfileCubit>().stream.listen((state) {
-      if (state is ProfileLoaded) {
+      if (state is ProfileLoaded && !loaded) {
         _tabController = TabController(
           length:
               isOwnProfile
@@ -71,18 +74,48 @@ class _ProfilePageState extends State<ProfilePage>
                       (state.profile.associated!.lists > 0 ? 1 : 0) +
                       (state.profile.associated!.starterPacks > 0 ? 1 : 0),
           vsync: this,
-          initialIndex: _tabController.index,
+          initialIndex: _tabController?.index ?? 0,
         );
+        _tabController!.addListener(() => _handleTabChange(isOwnProfile));
 
         setState(() {});
+        loaded = true;
       }
     });
   }
 
+  Future<void> _loadSavedFeedsPreferences() async {
+    try {
+      final savedFeedsPrefs =
+          await context
+              .read<AuthCubit>()
+              .getBlueskyService()
+              .getSavedFeedsPreference();
+
+      final savedFeedsPrefV2List =
+          await context
+              .read<AuthCubit>()
+              .getBlueskyService()
+              .getSavedFeedsPreferenceV2();
+
+      setState(() {
+        savedFeedsPreference = savedFeedsPrefs.firstWhere(
+          (pref) => pref.type.contains('savedFeedsPref'),
+        );
+
+        savedFeedsPrefV2 = savedFeedsPrefV2List.firstWhere(
+          (pref) => pref.type.contains('savedFeedsPrefV2'),
+        );
+      });
+    } catch (e) {
+      print('Error loading saved feeds preferences: $e');
+    }
+  }
+
   @override
   void dispose() {
-    _tabController.removeListener(() => _handleTabChange(false));
-    _tabController.dispose();
+    _tabController!.removeListener(() => _handleTabChange(false));
+    _tabController!.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _profileSubscription?.cancel();
@@ -99,7 +132,7 @@ class _ProfilePageState extends State<ProfilePage>
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
       builder: (context, state) {
-        if (state is ProfileLoaded) {
+        if (state is ProfileLoaded && _tabController != null) {
           final authState = context.read<AuthCubit>().state as AuthSuccess;
           final isOwnProfile = authState.profile?.did == widget.actorDid;
 
@@ -161,8 +194,17 @@ class _ProfilePageState extends State<ProfilePage>
             FeedType.likes,
           );
           break;
+        case 5:
+          await context.read<ProfileCubit>().loadActorFeeds(widget.actorDid);
+          break;
       }
-    } else {}
+    } else {
+      switch (index) {
+        case 4:
+          await context.read<ProfileCubit>().loadActorFeeds(widget.actorDid);
+          break;
+      }
+    }
   }
 
   Widget _buildCustomScrollView(
@@ -173,22 +215,22 @@ class _ProfilePageState extends State<ProfilePage>
     return RefreshIndicator(
       onRefresh: () async {
         await context.read<ProfileCubit>().getProfile(widget.actorDid);
-        return loadDataForTab(isOwnProfile, _tabController.index);
+        return loadDataForTab(isOwnProfile, _tabController!.index);
       },
       child: GestureDetector(
         onHorizontalDragEnd: (details) {
           if (details.primaryVelocity! > 0) {
             // Swipe right - go to previous tab
-            if (_tabController.index > 0) {
+            if (_tabController!.index > 0) {
               setState(() {
-                _tabController.animateTo(_tabController.index - 1);
+                _tabController!.animateTo(_tabController!.index - 1);
               });
             }
           } else if (details.primaryVelocity! < 0) {
             // Swipe left - go to next tab
-            if (_tabController.index < _tabController.length - 1) {
+            if (_tabController!.index < _tabController!.length - 1) {
               setState(() {
-                _tabController.animateTo(_tabController.index + 1);
+                _tabController!.animateTo(_tabController!.index + 1);
               });
             }
           }
@@ -397,7 +439,7 @@ class _ProfilePageState extends State<ProfilePage>
             ),
             SliverVisibility(
               visible: true,
-              sliver: _getSliver(_tabController.index, isOwnProfile, state),
+              sliver: _getSliver(_tabController!.index, isOwnProfile, state),
             ),
           ],
         ),
@@ -689,13 +731,96 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _buildFeedsTabSliver() {
-    return SliverToBoxAdapter(
-      child: Center(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: Text('Feeds tab content'),
-        ),
-      ),
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      builder: (context, state) {
+        if (state is! ProfileLoaded) {
+          return SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (state.isLoadingFeeds) {
+          return _buildTabLoadingSliver();
+        }
+
+        if (state.actorFeeds == null || state.actorFeeds!.feeds.isEmpty) {
+          return _buildEmptyTabSliver('feeds');
+        }
+
+        final int totalItemCount =
+            state.actorFeeds!.feeds.length + (state.hasMoreFeeds ? 1 : 1);
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            if (index % 2 == 1) {
+              return Divider(
+                height: 1,
+                thickness: 1,
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.25),
+              );
+            }
+
+            final itemIndex = index ~/ 2;
+
+            if (itemIndex >= state.actorFeeds!.feeds.length) {
+              return state.isLoadingMoreFeeds
+                  ? Center(child: CircularProgressIndicator())
+                  : state.hasMoreFeeds
+                  ? SizedBox.shrink()
+                  : Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('No more feeds to load'),
+                    ),
+                  );
+            }
+
+            if (itemIndex >= state.actorFeeds!.feeds.length - 5 &&
+                state.hasMoreFeeds &&
+                !state.isLoadingMoreFeeds) {
+              context.read<ProfileCubit>().loadMoreActorFeeds(widget.actorDid);
+            }
+
+            final sortedFeeds = List<FeedGeneratorView>.from(
+              state.actorFeeds!.feeds,
+            )..sort((a, b) => b.likeCount.compareTo(a.likeCount));
+            final feed = sortedFeeds[itemIndex];
+
+            return _buildAuthorFeedItem(
+              context,
+              feed,
+              savedFeedsPreference as SavedFeedsPreference,
+              savedFeedsPrefV2 as SavedFeedsPrefV2,
+              itemIndex,
+            );
+          }, childCount: totalItemCount * 2 - 1),
+        );
+      },
+    );
+  }
+
+  Widget _buildAuthorFeedItem(
+    BuildContext context,
+    FeedGeneratorView feed,
+    SavedFeedsPreference savedFeeds,
+    SavedFeedsPrefV2 savedFeedsPrefV2,
+    int index,
+  ) {
+    return AuthorFeedItemComponent(
+      feed: feed,
+      onTap: () {
+        //TODO
+      },
+      onSubscribe: () {
+        // TODO
+      },
+      isSubscribed:
+          savedFeedsPrefV2.items.any(
+            (savedFeed) => AtUri.parse(savedFeed.value) == feed.uri,
+          ) ||
+          savedFeeds.pinnedUris.contains(feed.uri),
     );
   }
 

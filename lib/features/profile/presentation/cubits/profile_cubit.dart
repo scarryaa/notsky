@@ -150,6 +150,59 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  Future<void> loadActorFeeds(String actorDid) async {
+    if (state is! ProfileLoaded) return;
+
+    final currentState = state as ProfileLoaded;
+    emit(currentState.copyWith(isLoadingFeeds: true));
+
+    try {
+      final feeds = await _blueskyService.getActorFeeds(actorDid);
+      emit(
+        currentState.copyWith(
+          actorFeeds: feeds,
+          feedsCursor: feeds.cursor,
+          hasMoreFeeds: feeds.cursor != null,
+          isLoadingFeeds: false,
+        ),
+      );
+    } catch (e) {
+      emit(currentState.copyWith(isLoadingFeeds: false));
+    }
+  }
+
+  Future<void> loadMoreActorFeeds(String actorDid) async {
+    if (state is! ProfileLoaded) return;
+
+    final currentState = state as ProfileLoaded;
+    if (currentState.isLoadingMoreFeeds || !currentState.hasMoreFeeds) return;
+
+    emit(currentState.copyWith(isLoadingMoreFeeds: true));
+
+    try {
+      final feeds = await _blueskyService.getActorFeeds(
+        actorDid,
+        cursor: currentState.feedsCursor,
+      );
+
+      final updatedFeeds = ActorFeeds(
+        feeds: [...currentState.actorFeeds!.feeds, ...feeds.feeds],
+        cursor: feeds.cursor,
+      );
+
+      emit(
+        currentState.copyWith(
+          actorFeeds: updatedFeeds,
+          feedsCursor: feeds.cursor,
+          hasMoreFeeds: feeds.cursor != null,
+          isLoadingMoreFeeds: false,
+        ),
+      );
+    } catch (e) {
+      emit(currentState.copyWith(isLoadingMoreFeeds: false));
+    }
+  }
+
   Future<Feed> _getFeedByType(
     String actorDid,
     FeedType feedType, {

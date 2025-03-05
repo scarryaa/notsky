@@ -18,6 +18,11 @@ abstract class BlueskyService {
   Future<Feed> getAuthorMedia(String authorDid, {String? cursor, int? limit});
   Future<Feed> getAuthorVideos(String authorDid, {String? cursor, int? limit});
   Future<Feed> getActorLikes(String authorDid, {String? cursor, int? limit});
+  Future<ActorFeeds> getActorFeeds(
+    String authorDid, {
+    String? cursor,
+    int? limit,
+  });
 
   Future<Feed> getFeed({
     required AtUri generatorUri,
@@ -30,6 +35,8 @@ abstract class BlueskyService {
 
   Future<FeedGenerators> getFeeds();
   Future<List<ContentLabelPreference>> getContentPreferences();
+  Future<List<SavedFeedsPrefV2>> getSavedFeedsPreferenceV2();
+  Future<List<SavedFeedsPreference>> getSavedFeedsPreference();
 
   Future<PostActionResult> like(String cid, AtUri uri);
   Future<PostActionResult> deleteRecord(AtUri uri);

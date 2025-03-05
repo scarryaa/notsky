@@ -90,6 +90,48 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
+  Future<List<SavedFeedsPreference>> getSavedFeedsPreference() async {
+    try {
+      final preferences = await getPreferences();
+
+      final savedFeedsPreference =
+          preferences.preferences
+              .map((pref) => pref.data)
+              .whereType<SavedFeedsPreference>()
+              .toList();
+
+      return savedFeedsPreference;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        await _refreshAndUpdateBluesky();
+        return getSavedFeedsPreference();
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<SavedFeedsPrefV2>> getSavedFeedsPreferenceV2() async {
+    try {
+      final preferences = await getPreferences();
+
+      final savedFeedsPreference =
+          preferences.preferences
+              .map((pref) => pref.data)
+              .whereType<SavedFeedsPrefV2>()
+              .toList();
+
+      return savedFeedsPreference;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        await _refreshAndUpdateBluesky();
+        return getSavedFeedsPreferenceV2();
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<Feed> getFeed({
     required AtUri generatorUri,
     String? cursor,
@@ -459,6 +501,31 @@ class BlueskyServiceImpl implements BlueskyService {
       if (isExpiredTokenError(e)) {
         await _refreshAndUpdateBluesky();
         return (await _bluesky.feed.getActorLikes(
+          actor: authorDid,
+          cursor: cursor,
+          limit: limit,
+        )).data;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ActorFeeds> getActorFeeds(
+    String authorDid, {
+    String? cursor,
+    int? limit,
+  }) async {
+    try {
+      return (await _bluesky.feed.getActorFeeds(
+        actor: authorDid,
+        cursor: cursor,
+        limit: limit,
+      )).data;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        await _refreshAndUpdateBluesky();
+        return (await _bluesky.feed.getActorFeeds(
           actor: authorDid,
           cursor: cursor,
           limit: limit,
