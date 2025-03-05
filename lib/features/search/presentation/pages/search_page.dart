@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
+import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:notsky/features/profile/presentation/pages/profile_page.dart';
 import 'dart:async';
 
@@ -240,12 +241,15 @@ class _SearchPageState extends State<SearchPage> {
               final blueskyService =
                   context.read<AuthCubit>().getBlueskyService();
 
-              return BlocProvider<FeedCubit>(
-                create: (context) => FeedCubit(blueskyService),
-                child: Builder(
-                  builder: (context) {
-                    return ProfilePage(actorDid: actor.did);
-                  },
+              return BlocProvider<ProfileCubit>(
+                create: (context) => ProfileCubit(blueskyService),
+                child: BlocProvider<FeedCubit>(
+                  create: (context) => FeedCubit(blueskyService),
+                  child: Builder(
+                    builder: (context) {
+                      return ProfilePage(actorDid: actor.did);
+                    },
+                  ),
                 ),
               );
             },
