@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
+import 'package:notsky/features/post/domain/entities/post_content.dart';
+import 'package:notsky/features/post/presentation/components/post/base_post_component.dart';
+import 'package:notsky/features/post/presentation/cubits/post_cubit.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:notsky/features/profile/presentation/pages/profile_page.dart';
 import 'package:notsky/shared/components/author_feed_item_component.dart';
@@ -35,14 +38,27 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   List<Actor> _people = [];
   List<FeedGeneratorView> _feeds = [];
   String? _feedsCursor;
-  final Map<String, bool> _followingStatus = {};
-  final Map<String, bool> _followingLoading = {};
+  List<ContentLabelPreference> _contentLabelPreferences = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_handleTabChange);
+    _loadContentPreferences();
+  }
+
+  Future<void> _loadContentPreferences() async {
+    try {
+      final preferences =
+          await context
+              .read<AuthCubit>()
+              .getBlueskyService()
+              .getContentPreferences();
+      setState(() {
+        _contentLabelPreferences = preferences;
+      });
+    } catch (e) {}
   }
 
   @override
@@ -478,14 +494,12 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   }
 
   Widget _buildPostResultItem(Post post) {
-    return ListTile(
-      leading:
-          post.author.avatar != null
-              ? CircleAvatar(backgroundImage: NetworkImage(post.author.avatar!))
-              : const CircleAvatar(child: Icon(Icons.person)),
-      title: Text(post.author.displayName ?? post.author.handle),
-      subtitle: Text(post.record.text),
-      onTap: () {},
+    return BasePostComponent(
+      postContent: RegularPost(post),
+      contentLabelPreferences: _contentLabelPreferences,
+      detailed: false,
+      isReplyToMissingPost: false,
+      isReplyToBlockedPost: false,
     );
   }
 }
