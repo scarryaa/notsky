@@ -6,6 +6,7 @@ import 'package:notsky/features/auth/presentation/pages/login_page.dart';
 import 'package:notsky/features/feed/data/providers/feed_repository_provider.dart';
 import 'package:notsky/features/home/presentation/cubits/feed_list_cubit.dart';
 import 'package:notsky/shared/components/base_scaffold.dart';
+import 'package:notsky/shared/cubits/follow/follow_cubit.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,11 @@ class NotSkyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => AuthCubit()..checkAuthStatus()),
+        BlocProvider<FollowCubit>(
+          create:
+              (context) =>
+                  FollowCubit(context.read<AuthCubit>().getBlueskyService()),
+        ),
         BlocProvider<FeedListCubit>(
           create: (context) {
             return FeedListCubit(

@@ -73,7 +73,6 @@ class AuthorFeedItemComponent extends StatelessWidget {
                       child: Text(
                         feed.description!,
                         style: Theme.of(context).textTheme.bodyMedium,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   Padding(

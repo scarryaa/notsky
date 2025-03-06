@@ -51,14 +51,26 @@ class BlueskyServiceImpl implements BlueskyService {
   }
 
   @override
-  Future<List<Post>> searchPosts(String term, {int? limit}) async {
+  Future<List<Post>> searchPosts(
+    String term, {
+    String? sortBy,
+    int? limit,
+  }) async {
     try {
-      final response = await _bluesky.feed.searchPosts(term, limit: limit);
+      final response = await _bluesky.feed.searchPosts(
+        term,
+        limit: limit,
+        sort: sortBy,
+      );
       return response.data.posts;
     } catch (e) {
       if (isExpiredTokenError(e)) {
         await _refreshAndUpdateBluesky();
-        final response = await _bluesky.feed.searchPosts(term, limit: limit);
+        final response = await _bluesky.feed.searchPosts(
+          term,
+          limit: limit,
+          sort: sortBy,
+        );
         return response.data.posts;
       }
       rethrow;
@@ -569,5 +581,38 @@ class BlueskyServiceImpl implements BlueskyService {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<FeedGenerators> searchFeeds(
+    String term, {
+    String? cursor,
+    String? sortBy,
+    int? limit,
+  }) async {
+    try {
+      final response = await _bluesky.unspecced.getPopularFeedGenerators(
+        limit: limit,
+        query: term,
+        cursor: cursor,
+      );
+      return response.data;
+    } catch (e) {
+      if (isExpiredTokenError(e)) {
+        await _refreshAndUpdateBluesky();
+        final response = await _bluesky.unspecced.getPopularFeedGenerators(
+          limit: limit,
+          query: term,
+          cursor: cursor,
+        );
+        return response.data;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<StrongRef> follow(String did) async {
+    return (await _bluesky.graph.follow(did: did)).data;
   }
 }

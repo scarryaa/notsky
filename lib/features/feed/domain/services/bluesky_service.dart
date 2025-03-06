@@ -1,3 +1,4 @@
+import 'package:atproto/atproto.dart';
 import 'package:atproto_core/atproto_core.dart';
 import 'package:bluesky/bluesky.dart';
 import 'package:notsky/features/post/domain/entities/post_action_result.dart';
@@ -12,6 +13,7 @@ abstract class BlueskyService {
   Future<Preferences> getPreferences();
 
   Future<ActorProfile> getProfile(String did);
+  Future<StrongRef> follow(String did);
 
   Future<Feed> getAuthorFeed(String authorDid, {String? cursor, int? limit});
   Future<Feed> getAuthorReplies(String authorDid, {String? cursor, int? limit});
@@ -39,7 +41,13 @@ abstract class BlueskyService {
   Future<List<SavedFeedsPreference>> getSavedFeedsPreference();
 
   Future<List<Actor>> searchActors(String term, {int? limit});
-  Future<List<Post>> searchPosts(String term, {int? limit});
+  Future<List<Post>> searchPosts(String term, {String? sortBy, int? limit});
+  Future<FeedGenerators> searchFeeds(
+    String term, {
+    String? cursor,
+    String? sortBy,
+    int? limit,
+  });
 
   Future<PostActionResult> like(String cid, AtUri uri);
   Future<PostActionResult> deleteRecord(AtUri uri);

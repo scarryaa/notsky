@@ -16,6 +16,8 @@ import 'package:notsky/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:notsky/features/profile/presentation/cubits/profile_state.dart';
 import 'package:notsky/features/thread/presentation/components/thread_component.dart';
 import 'package:notsky/shared/components/author_feed_item_component.dart';
+import 'package:notsky/shared/cubits/follow/follow_cubit.dart';
+import 'package:notsky/shared/cubits/follow/follow_state.dart';
 import 'package:notsky/util/util.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -40,6 +42,7 @@ class _ProfilePageState extends State<ProfilePage>
   double _scrollOffset = 0.0;
   late final SavedFeedsPreference savedFeedsPreference;
   late final SavedFeedsPrefV2 savedFeedsPrefV2;
+  bool _isFollowing = false;
 
   void _handleTabChange(bool isOwnProfile) {
     if (_tabController!.indexIsChanging) {
@@ -78,10 +81,38 @@ class _ProfilePageState extends State<ProfilePage>
         );
         _tabController!.addListener(() => _handleTabChange(isOwnProfile));
 
-        setState(() {});
+        setState(() {
+          _isFollowing = state.profile.viewer.isFollowing;
+        });
         loaded = true;
       }
     });
+  }
+
+  Future<void> _handleFollowToggle(ProfileLoaded state) async {
+    final blueskyService = context.read<AuthCubit>().getBlueskyService();
+
+    setState(() {
+      _isFollowing = !_isFollowing;
+    });
+
+    try {
+      if (state.profile.viewer.following != null) {
+        await blueskyService.deleteRecord(state.profile.viewer.following!);
+      } else {
+        await blueskyService.follow(state.profile.did);
+      }
+    } catch (e) {
+      setState(() {
+        _isFollowing = state.profile.viewer.isFollowing;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update following status: ${e.toString()}'),
+        ),
+      );
+    }
   }
 
   Future<void> _loadSavedFeedsPreferences() async {
@@ -300,10 +331,12 @@ class _ProfilePageState extends State<ProfilePage>
                                   ],
                                 ),
                                 SizedBox(height: 4.0),
-                                Text(
-                                  state.profile.description ?? '',
-                                  softWrap: true,
-                                ),
+                                if (state.profile.description != null &&
+                                    state.profile.description!.isNotEmpty)
+                                  Text(
+                                    state.profile.description ?? '',
+                                    softWrap: true,
+                                  ),
                               ],
                             ),
                           ),
@@ -882,7 +915,9 @@ class _ProfilePageState extends State<ProfilePage>
 
   Widget _buildDisplayName(ProfileLoaded state) {
     return Text(
-      state.profile.displayName ?? '',
+      state.profile.displayName != null && state.profile.displayName!.isNotEmpty
+          ? state.profile.displayName!
+          : state.profile.handle,
       softWrap: false,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
@@ -941,11 +976,57 @@ class _ProfilePageState extends State<ProfilePage>
     } else {
       return [
         _buildProfileButton(context, () {}, icon: Icons.message),
-        _buildProfileButton(
-          context,
-          state.profile.viewer.isFollowing ? () {} : () {},
-          label: state.profile.viewer.isFollowing ? 'Following' : 'Follow',
-          icon: state.profile.viewer.isFollowing ? Icons.check : Icons.add,
+        BlocBuilder<FollowCubit, FollowState>(
+          builder: (context, followState) {
+            if (followState is FollowLoaded) {
+              context.read<FollowCubit>().initializeFollowingStatus(
+                state.profile.did,
+                state.profile.viewer.isFollowing,
+              );
+
+              final isFollowing =
+                  followState.followingStatus[state.profile.did] ??
+                  state.profile.viewer.isFollowing;
+
+              return _buildProfileButton(
+                context,
+                () {
+                  try {
+                    context.read<FollowCubit>().toggleFollow(
+                      state.profile.did,
+                      state.profile.viewer.following,
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to update following status: $e'),
+                      ),
+                    );
+                  }
+                },
+                label: (isFollowing ? 'Following' : 'Follow'),
+                icon: isFollowing ? Icons.check : Icons.add,
+              );
+            }
+
+            return _buildProfileButton(
+              context,
+              state.profile.viewer.isFollowing &&
+                      state.profile.viewer.following != null
+                  ? () {
+                    context.read<AuthCubit>().getBlueskyService().deleteRecord(
+                      state.profile.viewer.following!,
+                    );
+                  }
+                  : () {
+                    context.read<AuthCubit>().getBlueskyService().follow(
+                      state.profile.did,
+                    );
+                  },
+              label: state.profile.viewer.isFollowing ? 'Following' : 'Follow',
+              icon: state.profile.viewer.isFollowing ? Icons.check : Icons.add,
+            );
+          },
         ),
         _buildProfileButton(context, () {}, icon: Icons.more_horiz),
       ];
