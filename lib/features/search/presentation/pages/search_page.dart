@@ -2,6 +2,7 @@ import 'package:bluesky/bluesky.dart' hide ListView;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notsky/features/auth/presentation/cubits/auth_cubit.dart';
+import 'package:notsky/features/auth/presentation/cubits/auth_state.dart';
 import 'package:notsky/features/feed/presentation/cubits/feed_cubit.dart';
 import 'package:notsky/features/post/domain/entities/post_content.dart';
 import 'package:notsky/features/post/presentation/components/post/base_post_component.dart';
@@ -299,7 +300,14 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
                       ? const Center(child: Text('Enter a search term'))
                       : _searchResults.isEmpty && !_isLoading
                       ? const Center(child: Text('No results found'))
-                      : ListView.builder(
+                      : ListView.separated(
+                        separatorBuilder:
+                            (context, index) => Divider(
+                              height: 1.0,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.25),
+                            ),
                         itemCount: _searchResults.length + 1,
                         itemBuilder: (context, index) {
                           return index == 0
@@ -413,6 +421,14 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   }
 
   Widget _buildActorResultItem(Actor actor) {
+    String? currentUserDid;
+
+    if (context.read<AuthCubit>().state is AuthSuccess) {
+      currentUserDid =
+          (context.read<AuthCubit>().state as AuthSuccess).session.did;
+    }
+    final isCurrentUser = actor.did == currentUserDid;
+
     return BlocBuilder<FollowCubit, FollowState>(
       builder: (context, followState) {
         if (followState is FollowLoaded) {
@@ -430,6 +446,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
             actor: actor,
             isFollowing: isFollowing,
             isLoading: isLoading,
+            isCurrentUser: isCurrentUser,
             onFollowTap: (_) {
               try {
                 context.read<FollowCubit>().toggleFollow(

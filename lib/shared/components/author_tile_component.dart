@@ -10,6 +10,7 @@ class AuthorTileComponent extends StatelessWidget {
     this.onFollowTap,
     this.isLoading = true,
     this.onTap,
+    this.isCurrentUser = false,
   });
 
   final Actor actor;
@@ -17,6 +18,7 @@ class AuthorTileComponent extends StatelessWidget {
   final bool isLoading;
   final Function(bool)? onFollowTap;
   final Function()? onTap;
+  final bool isCurrentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +109,10 @@ class AuthorTileComponent extends StatelessWidget {
   }
 
   Widget _buildFollowButton(BuildContext context) {
+    if (isCurrentUser) {
+      return SizedBox.shrink();
+    }
+
     return OutlinedButton(
       onPressed: () {
         if (onFollowTap != null) {
